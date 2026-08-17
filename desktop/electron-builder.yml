@@ -48,4 +48,6 @@ publish:
   provider: github
   owner: ktgmailorg
   repo: video-generator-rit
-  releaseType: release
+  # Jobs upload into the draft created by the release workflow; the final
+  # workflow job publishes it.
+  releaseType: draft
