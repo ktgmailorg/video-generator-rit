@@ -1,8 +1,13 @@
 {
   "name": "rit-video-studio-desktop",
-  "version": "0.4.0-beta.3",
+  "version": "0.4.0-beta.4",
   "description": "Desktop app for the RIT Course Video Generator studio",
   "license": "Apache-2.0",
+  "author": {
+    "name": "Kenju Tomita",
+    "email": "kenju.tomita@gmail.com"
+  },
+  "homepage": "https://github.com/ktgmailorg/video-generator-rit",
   "private": true,
   "type": "module",
   "main": "main.mjs",
