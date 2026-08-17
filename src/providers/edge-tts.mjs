@@ -94,18 +94,52 @@ export function buildVttFromWordBoundaries(events, options = {}) {
     endsSentence = /[.!?…]["'”’)]?$/.test(word.text);
   }
 
+  const minCueTicks = (options.minCueSeconds || 1.2) * TICKS_PER_SECOND;
+  const targetCueTicks = (options.targetCueSeconds || 3) * TICKS_PER_SECOND;
+  const spanOf = (chunk) =>
+    chunk.at(-1).offset + chunk.at(-1).duration - chunk[0].offset;
+
   const cues = [];
   for (const entry of groups) {
-    const chunkCount = Math.max(1, Math.ceil(entry.length / maxWordsPerCue));
-    const chunkSize = Math.ceil(entry.length / chunkCount);
-    for (let index = 0; index < entry.length; index += chunkSize) {
-      const chunk = entry.slice(index, index + chunkSize);
+    // Split on elapsed time rather than word count. Words are not evenly
+    // spaced, so equal-sized word chunks produce wildly unequal durations, and
+    // a chunk of quick function words can flash by in under a second.
+    const chunks = [];
+    let current = [];
+    for (const word of entry) {
+      current.push(word);
+      if (current.length >= maxWordsPerCue || spanOf(current) >= targetCueTicks) {
+        chunks.push(current);
+        current = [];
+      }
+    }
+    if (current.length > 0) chunks.push(current);
+    // Any chunk still too brief to read is merged back into its predecessor.
+    for (let index = chunks.length - 1; index > 0; index -= 1) {
+      if (spanOf(chunks[index]) < minCueTicks) {
+        chunks[index - 1] = chunks[index - 1].concat(chunks[index]);
+        chunks.splice(index, 1);
+      }
+    }
+    for (const chunk of chunks) {
       cues.push({
         words: chunk.map((word) => word.text),
         start: chunk[0].offset,
         end: chunk.at(-1).offset + chunk.at(-1).duration,
       });
     }
+  }
+
+  // A cue that ends on its last word leaves the screen blank through the pause
+  // that follows, which reads as rushed and inflates the words-per-minute an
+  // accessibility audit measures. Hold each cue into the following silence,
+  // stopping just short of the next cue so they never overlap.
+  const holdTicks = (options.maxHoldSeconds || 1.2) * TICKS_PER_SECOND;
+  const gapTicks = (options.minCueGapSeconds || 0.08) * TICKS_PER_SECOND;
+  for (const [index, cue] of cues.entries()) {
+    const next = cues[index + 1];
+    const ceiling = next ? next.start - gapTicks : cue.end + holdTicks;
+    cue.end = Math.max(cue.end, Math.min(cue.end + holdTicks, ceiling));
   }
   const lines = ["WEBVTT", ""];
   for (const cue of cues) {
