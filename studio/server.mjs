@@ -593,7 +593,17 @@ async function configurationSummary() {
     preset: config.preset,
     classification: config.dataPolicy.classification,
     ready: localPolicy.ok && checks.every((check) => check.ok),
-    fullyLocal: localPolicy.ok,
+    policyOk: localPolicy.ok,
+    // "fully local" has to mean it: a public project using Edge TTS or a
+    // hosted planner sends text off the machine, and the badge must say so.
+    fullyLocal:
+      localPolicy.ok &&
+      Object.values(config.providers).every(
+        (profile) => profile.executionLocation === "local",
+      ),
+    hostedProviders: Object.entries(config.providers)
+      .filter(([, profile]) => profile.executionLocation === "hosted")
+      .map(([name]) => name),
     checks,
     providers: Object.entries(config.providers).map(([name, profile]) => ({
       name,

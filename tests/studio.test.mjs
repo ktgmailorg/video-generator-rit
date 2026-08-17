@@ -206,3 +206,75 @@ test("studio blocks an unused hosted profile before a dynamic role can select it
     /optionalVoice.*hosted/i,
   );
 });
+
+test("a public project may use an allowlisted hosted provider", () => {
+  const config = {
+    dataPolicy: {
+      classification: "public",
+      hostedConsent: true,
+      allowedHostedProviders: ["edge"],
+    },
+    providers: {
+      edge: { adapter: "edge-tts", executionLocation: "hosted" },
+    },
+    roles: { narration: { primary: "edge", fallbacks: [] } },
+  };
+  const inspection = inspectFullyLocalStudioConfig(config);
+  assert.equal(inspection.ok, true, inspection.errors.join("; "));
+  assert.equal(inspection.mode, "public");
+});
+
+test("a public project still blocks a hosted provider it did not declare", () => {
+  const config = {
+    dataPolicy: {
+      classification: "public",
+      hostedConsent: true,
+      allowedHostedProviders: ["edge"],
+    },
+    providers: {
+      edge: { adapter: "edge-tts", executionLocation: "hosted" },
+      // Present but undeclared: a dynamic role must not be able to reach it.
+      sneaky: { adapter: "anthropic", executionLocation: "hosted" },
+    },
+    roles: { narration: { primary: "edge", fallbacks: [] } },
+  };
+  assert.throws(
+    () => assertFullyLocalStudioConfig(config),
+    /sneaky.*allowlist|sneaky.*hosted-only/i,
+  );
+});
+
+test("internal and restricted projects keep the strict local-only gate", () => {
+  for (const classification of ["internal", "restricted"]) {
+    const config = {
+      dataPolicy: {
+        classification,
+        // Consent and an allowlist must not buy a way around the boundary
+        // when the material is not public.
+        hostedConsent: true,
+        allowedHostedProviders: ["edge"],
+      },
+      providers: {
+        edge: { adapter: "edge-tts", executionLocation: "hosted" },
+      },
+      roles: { narration: { primary: "edge", fallbacks: [] } },
+    };
+    assert.throws(
+      () => assertFullyLocalStudioConfig(config),
+      LocalStudioPolicyError,
+      classification,
+    );
+  }
+});
+
+test("a config that omits its classification is treated as sensitive", () => {
+  const config = {
+    providers: {
+      edge: { adapter: "edge-tts", executionLocation: "hosted" },
+    },
+    roles: { narration: { primary: "edge", fallbacks: [] } },
+  };
+  const inspection = inspectFullyLocalStudioConfig(config);
+  assert.equal(inspection.ok, false);
+  assert.equal(inspection.mode, "local-only");
+});

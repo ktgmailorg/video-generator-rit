@@ -88,9 +88,11 @@ async function loadConfiguration() {
     const config = await response.json();
     if (!response.ok) throw new Error(config.error || "Runtime check failed");
     document.querySelector("#config-preset").textContent = config.preset;
-    document.querySelector("#config-data").textContent = config.fullyLocal
-      ? `${config.classification} · fully local`
-      : `${config.classification} · blocked non-local route`;
+    document.querySelector("#config-data").textContent = !config.policyOk
+      ? `${config.classification} · blocked non-local route`
+      : config.fullyLocal
+        ? `${config.classification} · fully local`
+        : `${config.classification} · text sent to ${config.hostedProviders.join(", ")}`;
     document.querySelector("#config-providers").textContent =
       config.providers.length
         ? config.providers

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { presetConfig } from "../src/config.mjs";
 import { assertSchema } from "../src/core/schema.mjs";
+import { inspectFullyLocalStudioConfig } from "../studio/local-policy.mjs";
 import {
   applyCredentialProviders,
   assertApiKeyShape,
@@ -37,12 +38,16 @@ test("every provider declares an api-key auth kind", () => {
   }
 });
 
-test("free mode leaves the zero-key generic preset untouched", async () => {
-  const base = presetConfig("generic");
-  const config = applyCredentialProviders(base, []);
-  assert.deepEqual(config, base);
-  assert.equal(config.dataPolicy.hostedConsent, false);
+test("free mode adds no planner but allowlists Edge TTS narration", async () => {
+  const config = applyCredentialProviders(presetConfig("generic"), []);
+  // No key means no hosted planner and no AI transcript drafting.
   assert.equal(config.roles.planner, undefined);
+  assert.deepEqual(Object.keys(config.providers), ["edge"]);
+  // Edge TTS is Microsoft-hosted, so it must be declared to pass the studio
+  // gate; claiming free mode is fully local would be inaccurate.
+  assert.equal(config.dataPolicy.hostedConsent, true);
+  assert.deepEqual(config.dataPolicy.allowedHostedProviders, ["edge"]);
+  assert.equal(config.dataPolicy.classification, "public");
   await assertSchema("config", config);
 });
 
@@ -89,7 +94,28 @@ test("incomplete selections are ignored rather than written as partial profiles"
     { model: "gpt-4.1" },
   ]);
   assert.equal(config.providers["anthropic-planning"], undefined);
-  assert.equal(config.dataPolicy.hostedConsent, false);
+  assert.deepEqual(config.dataPolicy.allowedHostedProviders, ["edge"]);
+});
+
+test("every config the desktop app generates passes the studio gate", () => {
+  for (const selections of [
+    [],
+    [{ id: "anthropic", model: "claude-sonnet-5" }],
+    [{ id: "openai", model: "gpt-4.1" }],
+    [
+      { id: "anthropic", model: "claude-sonnet-5" },
+      { id: "openai", model: "gpt-4.1" },
+    ],
+  ]) {
+    const config = applyCredentialProviders(presetConfig("generic"), selections);
+    const inspection = inspectFullyLocalStudioConfig(config);
+    assert.equal(
+      inspection.ok,
+      true,
+      `${selections.length} provider(s): ${inspection.errors.join("; ")}`,
+    );
+    assert.equal(inspection.mode, "public");
+  }
 });
 
 test("planner model lists keep text models and stay stable", () => {

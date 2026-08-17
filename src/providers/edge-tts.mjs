@@ -46,27 +46,66 @@ export function buildVttFromWordBoundaries(events, options = {}) {
   const maxWordsPerCue = options.maxWordsPerCue || 8;
   const maxGapTicks = (options.maxGapSeconds || 0.8) * TICKS_PER_SECOND;
   const words = [];
+  const sentenceStarts = [];
   for (const event of events) {
     for (const entry of event?.Metadata || []) {
-      if (entry.Type !== "WordBoundary") continue;
       const data = entry.Data || {};
-      words.push({
-        text: data.text?.Text ?? "",
-        offset: data.Offset ?? 0,
-        duration: data.Duration ?? 0,
-      });
+      if (entry.Type === "WordBoundary") {
+        words.push({
+          text: data.text?.Text ?? "",
+          offset: data.Offset ?? 0,
+          duration: data.Duration ?? 0,
+        });
+      } else if (entry.Type === "SentenceBoundary") {
+        sentenceStarts.push(data.Offset ?? 0);
+      }
     }
   }
-  const cues = [];
-  let current = null;
+  // Word and sentence events interleave out of order, so offsets — not
+  // arrival order — decide where a sentence begins.
+  words.sort((left, right) => left.offset - right.offset);
+  sentenceStarts.sort((left, right) => left - right);
+
+  // Group by sentence and pause first, then divide any over-long group into
+  // balanced chunks. Filling greedily to the limit would leave the tail of a
+  // sentence stranded as a one-word cue.
+  const groups = [];
+  let group = null;
+  let sentenceIndex = 0;
+  let endsSentence = false;
   for (const word of words) {
-    const gap = current ? word.offset - current.end : 0;
-    if (!current || current.words.length >= maxWordsPerCue || gap > maxGapTicks) {
-      current = { words: [], start: word.offset, end: word.offset };
-      cues.push(current);
+    // Edge TTS strips punctuation from WordBoundary text, so sentence breaks
+    // come from SentenceBoundary offsets; the punctuation check is a fallback
+    // for providers that do include it.
+    let startsSentence = false;
+    while (
+      sentenceIndex < sentenceStarts.length &&
+      word.offset >= sentenceStarts[sentenceIndex]
+    ) {
+      sentenceIndex += 1;
+      startsSentence = group !== null;
     }
-    current.words.push(word.text);
-    current.end = word.offset + word.duration;
+    const gap = group ? word.offset - group.at(-1).offset - group.at(-1).duration : 0;
+    if (!group || startsSentence || endsSentence || gap > maxGapTicks) {
+      group = [];
+      groups.push(group);
+    }
+    group.push(word);
+    endsSentence = /[.!?…]["'”’)]?$/.test(word.text);
+  }
+
+  const cues = [];
+  for (const entry of groups) {
+    const chunkCount = Math.max(1, Math.ceil(entry.length / maxWordsPerCue));
+    const chunkSize = Math.ceil(entry.length / chunkCount);
+    for (let index = 0; index < entry.length; index += chunkSize) {
+      const chunk = entry.slice(index, index + chunkSize);
+      cues.push({
+        words: chunk.map((word) => word.text),
+        start: chunk[0].offset,
+        end: chunk.at(-1).offset + chunk.at(-1).duration,
+      });
+    }
   }
   const lines = ["WEBVTT", ""];
   for (const cue of cues) {
@@ -86,7 +125,9 @@ async function synthesizeWithNode(edgeTtsModule, request, profile, voice, signal
   await tts.setMetadata(
     voice,
     OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3,
-    { wordBoundaryEnabled: true },
+    // Sentence boundaries are what keep captions from running two sentences
+    // into one cue; Edge TTS omits punctuation from word events.
+    { wordBoundaryEnabled: true, sentenceBoundaryEnabled: true },
   );
   const prosody = {
     rate: request.parameters?.rate || profile.rate || "+0%",

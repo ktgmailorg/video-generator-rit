@@ -83,7 +83,6 @@ export function applyCredentialProviders(config, selections = []) {
   next.providers = { ...(next.providers || {}) };
   next.roles = { ...(next.roles || {}) };
   const configured = selections.filter((entry) => entry?.id && entry?.model);
-  if (configured.length === 0) return next;
 
   for (const { id, model } of configured) {
     const provider = credentialProvider(id);
@@ -105,12 +104,16 @@ export function applyCredentialProviders(config, selections = []) {
       }
     }
   }
+  // Every hosted profile must be allowlisted for the studio to accept the
+  // config, including the Edge TTS narration profile from the generic preset:
+  // Edge TTS is Microsoft's hosted service, so narration text does leave the
+  // machine even in free mode. Recording that honestly here is what lets the
+  // studio's public-mode gate open.
+  const hosted = hostedProviderNames(next.providers);
   next.dataPolicy = {
     ...next.dataPolicy,
-    hostedConsent: true,
-    // Every hosted profile in the config must be listed, including the Edge
-    // TTS narration profile inherited from the generic preset.
-    allowedHostedProviders: hostedProviderNames(next.providers),
+    hostedConsent: hosted.length > 0,
+    allowedHostedProviders: hosted,
   };
   return next;
 }

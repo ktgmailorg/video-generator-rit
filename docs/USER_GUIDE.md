@@ -145,6 +145,13 @@ deterministic visuals instead:
 npm run rit-video -- init --preset generic
 ```
 
+Be aware of what that means for your data: **Edge TTS is Microsoft's hosted
+service**, so the narration text is sent there to be synthesized. Everything
+else — visuals, captions, rendering — happens on your machine. The generic
+preset is therefore classified `public`, and the studio refuses it for a
+project classified `internal` or `restricted`. For narration that never
+leaves the machine, configure a local Piper voice.
+
 ## Troubleshooting
 
 ### The studio page does not open

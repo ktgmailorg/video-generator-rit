@@ -1,19 +1,35 @@
 # RIT Course Video Generator
 
 Turn a script — or just a topic plus source notes — into a finished,
-captioned, accessible course video. Runs entirely on your computer, free by
+captioned, accessible course video. Runs on your own computer, free by
 default, with any AI model you choose (or none at all).
+
+## Download the app (beta)
+
+No Git, no command line, no account. FFmpeg is bundled.
+
+| [Windows](https://github.com/ktgmailorg/video-generator-rit/releases/latest/download/RIT-Video-Studio-Setup.exe) | [macOS](https://github.com/ktgmailorg/video-generator-rit/releases/latest/download/RIT-Video-Studio.dmg) | [Linux](https://github.com/ktgmailorg/video-generator-rit/releases/latest/download/RIT-Video-Studio.AppImage) |
+| --- | --- | --- |
+| `.exe` installer | `.dmg` (Apple silicon) | `.AppImage` · [`.deb`](https://github.com/ktgmailorg/video-generator-rit/releases/latest/download/RIT-Video-Studio.deb) |
+
+Beta builds are unsigned, so Windows SmartScreen and macOS Gatekeeper ask for
+confirmation on first launch. See [all releases](https://github.com/ktgmailorg/video-generator-rit/releases)
+and the [desktop notes](desktop/README.md).
+
+## What it is
 
 A provider-agnostic, reproducible Node.js 22 pipeline for authored or
 AI-assisted course videos: Edge TTS and deterministic SVG visuals out of the
 box, plus local/hosted model routing, recorded replay, source-grounded
 planning, accessibility gates, instructor approvals, production checks, and
 LMS-ready packaging. A local web studio (`npm run studio:launch`) gives
-non-technical users a one-click browser interface; a cross-platform desktop
-app is on the [roadmap](docs/ROADMAP.md).
+non-technical users the same interface in a browser.
 
 **Free mode, no accounts:** the default preset uses Edge TTS narration and
-deterministic educational diagrams — no API keys, no model downloads.
+deterministic educational diagrams — no API keys, no model downloads. Note
+that Edge TTS is Microsoft's hosted service, so narration text is sent there
+to be synthesized; visuals, captions, and rendering stay on your machine, and
+a local Piper voice keeps narration on-machine too.
 **Bring your own models:** Anthropic, OpenAI, any OpenAI-compatible server,
 Ollama, ComfyUI, Piper, and whisper.cpp are supported through explicit
 provider profiles.
