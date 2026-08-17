@@ -30,15 +30,21 @@ extraResources:
 
 beforePack: scripts/copy-ffmpeg.mjs
 
+# Version-less artifact names give the website permanent direct-download
+# URLs via /releases/latest/download/<name>; the release tag carries the
+# version and electron-updater reads it from latest*.yml.
 mac:
   category: public.app-category.education
+  artifactName: "RIT-Video-Studio.${ext}"
   target:
     - dmg
     - zip
 win:
+  artifactName: "RIT-Video-Studio-Setup.${ext}"
   target:
     - nsis
 linux:
+  artifactName: "RIT-Video-Studio.${ext}"
   target:
     - AppImage
     - deb
