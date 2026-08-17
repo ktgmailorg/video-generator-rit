@@ -3,7 +3,25 @@ import { mkdir } from "node:fs/promises";
 import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { app, BrowserWindow, dialog, shell, utilityProcess } from "electron";
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  shell,
+  utilityProcess,
+} from "electron";
+import { CREDENTIAL_PROVIDERS, applyCredentialProviders } from "./credential-providers.mjs";
+import {
+  configuredCredentials,
+  credentialEnv,
+  deleteCredential,
+  encryptionAvailable,
+  readSettings,
+  saveCredential,
+  verifyCredential,
+  writeSettings,
+} from "./credentials.mjs";
 
 const desktopRoot = resolve(fileURLToPath(new URL(".", import.meta.url)));
 const smokeMode = process.argv.includes("--smoke");
@@ -16,11 +34,13 @@ const pipelineRoot = app.isPackaged
 
 let serverProcess = null;
 let mainWindow = null;
+let setupWindow = null;
+let studioUrl = null;
 let quitting = false;
 
 function bundledBinary(name) {
   // ffmpeg-static / ffprobe-static export the absolute path to their binary.
-  // In a packaged build those files live under resources/pipeline/desktop-bin.
+  // In a packaged build those files live under resources/desktop-bin.
   if (app.isPackaged) {
     const suffix = process.platform === "win32" ? ".exe" : "";
     const candidate = join(process.resourcesPath, "desktop-bin", `${name}${suffix}`);
@@ -61,17 +81,27 @@ async function resolveFfmpegEnvironment() {
   return environment;
 }
 
-async function ensureConfig(dataRoot) {
-  // Users can drop a hand-edited video.config.json in the app data directory;
-  // otherwise generate the zero-key generic preset (Edge TTS + deterministic
-  // SVG visuals) on first run.
-  const configPath = join(dataRoot, "video.config.json");
-  if (!existsSync(configPath)) {
-    const { writePresetConfig } = await import(
-      pathToFileURL(join(pipelineRoot, "src", "config.mjs")).href
-    );
-    await writePresetConfig(configPath, "generic");
-  }
+function dataRoot() {
+  return join(app.getPath("userData"), "studio");
+}
+
+/**
+ * Rewrite the studio config from the current credential state: the zero-key
+ * generic preset, plus a hosted planner for each provider holding a key.
+ */
+async function writeStudioConfig() {
+  const { presetConfig } = await import(
+    pathToFileURL(join(pipelineRoot, "src", "config.mjs")).href
+  );
+  const { atomicWriteJson } = await import(
+    pathToFileURL(join(pipelineRoot, "src", "core", "canonical.mjs")).href
+  );
+  const configPath = join(dataRoot(), "video.config.json");
+  const config = applyCredentialProviders(
+    presetConfig("generic"),
+    await configuredCredentials(),
+  );
+  await atomicWriteJson(configPath, config);
   return configPath;
 }
 
@@ -113,15 +143,23 @@ async function waitForStudio(url, timeoutMilliseconds) {
   );
 }
 
+function stopStudio() {
+  if (serverProcess) {
+    serverProcess.kill();
+    serverProcess = null;
+  }
+}
+
 async function startStudio() {
-  const dataRoot = join(app.getPath("userData"), "studio");
-  const outputRoot = join(dataRoot, "output");
+  const outputRoot = join(dataRoot(), "output");
   await mkdir(outputRoot, { recursive: true });
-  const configPath = await ensureConfig(dataRoot);
+  const configPath = await writeStudioConfig();
   const port = await freePort();
   const environment = {
     ...process.env,
     ...(await resolveFfmpegEnvironment()),
+    // Provider keys are handed to the server process only, never to a renderer.
+    ...(await credentialEnv()),
   };
   serverProcess = utilityProcess.fork(
     join(pipelineRoot, "studio", "server.mjs"),
@@ -143,12 +181,19 @@ async function startStudio() {
       app.quit();
     }
   });
-  const studioUrl = `http://127.0.0.1:${port}`;
+  studioUrl = `http://127.0.0.1:${port}`;
   await waitForStudio(`${studioUrl}/api/config`, 90_000);
   return studioUrl;
 }
 
-function createWindow(studioUrl) {
+/** Credentials changed, so the server needs a fresh config and environment. */
+async function restartStudio() {
+  stopStudio();
+  await startStudio();
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.loadURL(studioUrl);
+}
+
+function createStudioWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 880,
@@ -156,7 +201,8 @@ function createWindow(studioUrl) {
     minHeight: 640,
     title: "RIT Video Studio",
     webPreferences: {
-      // The renderer is the served studio web app; it needs no Node access.
+      // The renderer is the served studio web app; it needs no Node access
+      // and deliberately gets no preload bridge.
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -174,26 +220,112 @@ function createWindow(studioUrl) {
   mainWindow.loadURL(studioUrl);
 }
 
-function stopStudio() {
-  quitting = true;
-  if (serverProcess) {
-    serverProcess.kill();
-    serverProcess = null;
-  }
+function createSetupWindow() {
+  setupWindow = new BrowserWindow({
+    width: 720,
+    height: 760,
+    resizable: true,
+    title: "RIT Video Studio setup",
+    webPreferences: {
+      preload: join(desktopRoot, "preload.cjs"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+  setupWindow.removeMenu?.();
+  setupWindow.on("closed", () => {
+    setupWindow = null;
+    // Closing the setup window without choosing still opens the studio.
+    if (!quitting && !mainWindow) createStudioWindow();
+  });
+  setupWindow.loadFile(join(desktopRoot, "setup", "index.html"));
+}
+
+function registerSetupHandlers() {
+  ipcMain.handle("setup:state", async () => ({
+    providers: CREDENTIAL_PROVIDERS.map((provider) => ({
+      id: provider.id,
+      label: provider.label,
+      keyPrefix: provider.keyPrefix,
+      keyUrl: provider.keyUrl,
+      authKinds: [...provider.authKinds],
+    })),
+    configured: await configuredCredentials(),
+    encryptionAvailable: encryptionAvailable(),
+    settings: await readSettings(),
+  }));
+
+  ipcMain.handle("setup:verify", async (_event, { id, key }) => {
+    try {
+      const { models } = await verifyCredential(id, key);
+      return { ok: true, models };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("setup:save", async (_event, { id, key, model }) => {
+    try {
+      await saveCredential(id, key);
+      const settings = await readSettings();
+      await writeSettings({
+        mode: "byok",
+        models: { ...settings.models, [id]: model },
+      });
+      await restartStudio();
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("setup:forget", async (_event, { id }) => {
+    await deleteCredential(id);
+    const remaining = await configuredCredentials();
+    await writeSettings({ mode: remaining.length > 0 ? "byok" : "free" });
+    await restartStudio();
+    return { ok: true };
+  });
+
+  ipcMain.handle("setup:free-mode", async () => {
+    await writeSettings({ mode: "free" });
+    return { ok: true };
+  });
+
+  ipcMain.handle("setup:finish", async () => {
+    await writeSettings({ setupCompleted: true });
+    if (!mainWindow) createStudioWindow();
+    if (setupWindow && !setupWindow.isDestroyed()) setupWindow.close();
+    return { ok: true };
+  });
+
+  ipcMain.handle("setup:open-external", async (_event, { url }) => {
+    // Only ever open the vendors' own documented key pages.
+    const allowed = CREDENTIAL_PROVIDERS.map((provider) => provider.keyUrl);
+    if (allowed.includes(url)) await shell.openExternal(url);
+    return { ok: true };
+  });
 }
 
 app.whenReady().then(async () => {
   try {
-    const studioUrl = await startStudio();
+    registerSetupHandlers();
+    await startStudio();
     if (smokeMode) {
       process.stdout.write(`SMOKE OK ${studioUrl}\n`);
       app.exit(0);
       return;
     }
-    createWindow(studioUrl);
+    const settings = await readSettings();
+    if (settings.setupCompleted) {
+      createStudioWindow();
+    } else {
+      createSetupWindow();
+    }
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0 && studioUrl) {
-        createWindow(studioUrl);
+        createStudioWindow();
       }
     });
   } catch (error) {
@@ -211,5 +343,8 @@ app.on("window-all-closed", () => {
   app.quit();
 });
 
-app.on("before-quit", stopStudio);
+app.on("before-quit", () => {
+  quitting = true;
+  stopStudio();
+});
 process.on("exit", stopStudio);

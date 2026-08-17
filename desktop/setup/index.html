@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
+    <title>RIT Video Studio setup</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #14161a;
+        --muted: #5c6470;
+        --line: #dfe3e9;
+        --card: #f6f7f9;
+        --accent: #f76902;
+        --accent-fg: #ffffff;
+        --ok: #0f7b3f;
+        --err: #b3261e;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #16181c;
+          --fg: #f2f3f5;
+          --muted: #a2abb8;
+          --line: #2c3038;
+          --card: #1e2126;
+          --ok: #4ac57e;
+          --err: #ff8a80;
+        }
+      }
+      * { box-sizing: border-box; }
+      /* `display: flex` below would otherwise defeat the hidden attribute. */
+      [hidden] { display: none !important; }
+      body {
+        margin: 0;
+        padding: 36px 40px 44px;
+        background: var(--bg);
+        color: var(--fg);
+        font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      h1 { font-size: 25px; margin: 0 0 6px; letter-spacing: -0.01em; }
+      p.lede { margin: 0 0 26px; color: var(--muted); max-width: 62ch; }
+      fieldset { border: 0; margin: 0; padding: 0; }
+      .choices { display: grid; gap: 14px; }
+      .choice {
+        border: 1.5px solid var(--line);
+        border-radius: 12px;
+        padding: 16px 18px;
+        background: var(--card);
+        cursor: pointer;
+        display: block;
+      }
+      .choice:hover { border-color: var(--muted); }
+      .choice:has(input:checked) { border-color: var(--accent); }
+      .choice-head { display: flex; align-items: center; gap: 10px; font-weight: 640; }
+      .choice p { margin: 8px 0 0 26px; color: var(--muted); font-size: 14px; }
+      .badge {
+        margin-left: auto; font-size: 11.5px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+      }
+      .keys { margin: 22px 0 0; display: none; }
+      .keys[data-visible="true"] { display: block; }
+      .provider {
+        border-top: 1px solid var(--line);
+        padding: 18px 0 4px;
+      }
+      .provider h2 { font-size: 15px; margin: 0 0 4px; }
+      .provider .hint { color: var(--muted); font-size: 13.5px; margin: 0 0 10px; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+      input[type="password"], input[type="text"], select {
+        flex: 1 1 260px; min-width: 0;
+        padding: 9px 11px; border-radius: 8px;
+        border: 1.5px solid var(--line); background: var(--bg); color: var(--fg);
+        font: inherit; font-size: 14px;
+      }
+      select { flex: 0 1 240px; }
+      button {
+        font: inherit; font-size: 14px; font-weight: 600;
+        padding: 9px 15px; border-radius: 8px; cursor: pointer;
+        border: 1.5px solid var(--line); background: var(--bg); color: var(--fg);
+      }
+      button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+      button:disabled { opacity: 0.55; cursor: progress; }
+      .status { font-size: 13.5px; margin: 9px 0 0; min-height: 1.2em; }
+      .status.ok { color: var(--ok); }
+      .status.err { color: var(--err); }
+      .saved { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+      .saved code {
+        background: var(--card); padding: 2px 7px; border-radius: 6px;
+        border: 1px solid var(--line); font-size: 13px;
+      }
+      footer {
+        margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--line);
+        display: flex; align-items: center; gap: 14px;
+      }
+      footer .note { color: var(--muted); font-size: 13px; max-width: 52ch; }
+      footer button { margin-left: auto; }
+      a { color: var(--accent); }
+      .warn {
+        margin: 0 0 20px; padding: 11px 14px; border-radius: 9px;
+        background: var(--card); border: 1px solid var(--line);
+        color: var(--muted); font-size: 13.5px; display: none;
+      }
+      .warn[data-visible="true"] { display: block; }
+    </style>
+  </head>
+  <body>
+    <h1>Welcome to RIT Video Studio</h1>
+    <p class="lede">
+      Choose how the studio should generate text. You can change this later,
+      and narration, visuals, captions, and rendering are always free and
+      local to this computer.
+    </p>
+
+    <p class="warn" id="storage-warning"></p>
+
+    <fieldset>
+      <div class="choices">
+        <label class="choice">
+          <span class="choice-head">
+            <input type="radio" name="mode" value="free" checked>
+            Free mode
+            <span class="badge">No account</span>
+          </span>
+          <p>
+            Write or paste your own script. Narration, captions, visuals, and
+            rendering all run without any API key or sign-in.
+          </p>
+        </label>
+        <label class="choice">
+          <span class="choice-head">
+            <input type="radio" name="mode" value="byok">
+            Add my own AI provider key
+            <span class="badge">Optional</span>
+          </span>
+          <p>
+            Adds the “generate a draft transcript with AI” option. Uses your
+            own Anthropic or OpenAI API key, billed to your account. Keys are
+            encrypted by your operating system and never leave this computer.
+          </p>
+        </label>
+      </div>
+    </fieldset>
+
+    <div class="keys" id="keys"></div>
+
+    <footer>
+      <span class="note" id="footer-note"></span>
+      <button class="primary" id="continue">Open the studio</button>
+    </footer>
+
+    <script>
+      const api = window.studioSetup;
+      const keysEl = document.getElementById("keys");
+      const warnEl = document.getElementById("storage-warning");
+      const noteEl = document.getElementById("footer-note");
+      let state = null;
+
+      const escape = (value) =>
+        String(value).replace(/[&<>"']/g, (character) => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+        })[character]);
+
+      function providerMarkup(provider, configured) {
+        const saved = configured.find((entry) => entry.id === provider.id);
+        if (saved) {
+          return `
+            <div class="provider" data-provider="${escape(provider.id)}">
+              <h2>${escape(provider.label)}</h2>
+              <div class="saved">
+                <span>Key saved <code>${escape(saved.hint)}</code></span>
+                <span>·</span>
+                <span>Model <code>${escape(saved.model || "not set")}</code></span>
+                <button data-action="forget">Remove</button>
+              </div>
+              <p class="status" data-role="status"></p>
+            </div>`;
+        }
+        return `
+          <div class="provider" data-provider="${escape(provider.id)}">
+            <h2>${escape(provider.label)}</h2>
+            <p class="hint">
+              Paste a key that starts with <code>${escape(provider.keyPrefix)}</code>.
+              <a href="#" data-action="open-key-page">Get a key ↗</a>
+            </p>
+            <div class="row">
+              <input type="password" data-role="key" placeholder="${escape(provider.keyPrefix)}…"
+                autocomplete="off" spellcheck="false">
+              <button data-action="verify">Check key</button>
+            </div>
+            <div class="row" data-role="model-row" hidden>
+              <select data-role="model"></select>
+              <button class="primary" data-action="save">Save</button>
+            </div>
+            <p class="status" data-role="status"></p>
+          </div>`;
+      }
+
+      function render() {
+        keysEl.innerHTML = state.providers
+          .map((provider) => providerMarkup(provider, state.configured))
+          .join("");
+        const configuredCount = state.configured.length;
+        noteEl.textContent = configuredCount
+          ? `${configuredCount} provider${configuredCount > 1 ? "s" : ""} connected. Free narration and rendering stay enabled.`
+          : "Free mode needs no further setup.";
+        if (!state.encryptionAvailable) {
+          warnEl.dataset.visible = "true";
+          warnEl.textContent =
+            "This system has no available keyring, so a key you add will be kept in memory for this session only and will need re-entering next launch. Free mode is unaffected.";
+        }
+      }
+
+      function setStatus(element, message, kind) {
+        const status = element.querySelector('[data-role="status"]');
+        status.textContent = message;
+        status.className = `status ${kind || ""}`;
+      }
+
+      keysEl.addEventListener("click", async (event) => {
+        const button = event.target.closest("[data-action]");
+        if (!button) return;
+        event.preventDefault();
+        const card = button.closest("[data-provider]");
+        const id = card.dataset.provider;
+        const provider = state.providers.find((entry) => entry.id === id);
+        const action = button.dataset.action;
+
+        if (action === "open-key-page") {
+          await api.openExternal(provider.keyUrl);
+          return;
+        }
+        if (action === "forget") {
+          await api.forgetKey(id);
+          state = await api.getState();
+          render();
+          return;
+        }
+        if (action === "verify") {
+          const key = card.querySelector('[data-role="key"]').value;
+          button.disabled = true;
+          setStatus(card, "Checking with the provider…");
+          const result = await api.verifyKey(id, key);
+          button.disabled = false;
+          if (!result.ok) {
+            setStatus(card, result.error, "err");
+            return;
+          }
+          const select = card.querySelector('[data-role="model"]');
+          select.innerHTML = result.models
+            .map((model) => `<option value="${escape(model)}">${escape(model)}</option>`)
+            .join("");
+          card.querySelector('[data-role="model-row"]').hidden = false;
+          setStatus(card, "Key works. Choose the model to plan with.", "ok");
+          return;
+        }
+        if (action === "save") {
+          const key = card.querySelector('[data-role="key"]').value;
+          const model = card.querySelector('[data-role="model"]').value;
+          button.disabled = true;
+          setStatus(card, "Saving…");
+          const result = await api.saveKey(id, key, model);
+          button.disabled = false;
+          if (!result.ok) {
+            setStatus(card, result.error, "err");
+            return;
+          }
+          state = await api.getState();
+          render();
+        }
+      });
+
+      document.querySelectorAll('input[name="mode"]').forEach((input) => {
+        input.addEventListener("change", () => {
+          keysEl.dataset.visible = String(input.value === "byok" && input.checked);
+        });
+      });
+
+      document.getElementById("continue").addEventListener("click", async (event) => {
+        event.target.disabled = true;
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        if (mode === "free") await api.useFreeMode();
+        await api.finish();
+      });
+
+      (async () => {
+        state = await api.getState();
+        if (state.configured.length > 0) {
+          document.querySelector('input[value="byok"]').checked = true;
+          keysEl.dataset.visible = "true";
+        }
+        render();
+      })();
+    </script>
+  </body>
+</html>

@@ -18,8 +18,10 @@ zero terminal use and zero API keys.
 - [x] Bundled FFmpeg/FFprobe (per-platform static builds)
 - [x] Pure-Node Edge TTS path (`uvx` no longer required; kept as fallback)
 - [ ] Optional bundled Piper voices for fully-offline narration
-- [ ] First-run wizard: Free mode (no keys) vs. bring-your-own keys
-      (stored with Electron `safeStorage`)
+- [x] First-run setup screen: Free mode (no keys) vs. bring-your-own keys,
+      encrypted with Electron `safeStorage`, key verified against the
+      provider before saving and the planner model chosen from the account's
+      own model list
 - [ ] `rit-video doctor` surfaced as a setup checklist screen
 - [x] Installers: macOS dmg, Windows NSIS, Linux AppImage/deb via
       electron-builder + GitHub Actions release workflow
