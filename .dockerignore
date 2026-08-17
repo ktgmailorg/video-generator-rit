@@ -1,0 +1,15 @@
+.git
+.github
+.video-cache
+node_modules
+output
+.env
+.env.*
+*.mp3
+*.wav
+*.mp4
+*.mov
+*.webm
+*.png
+*.jpg
+*.jpeg

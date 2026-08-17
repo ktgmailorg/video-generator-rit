@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "preset": "rit-course",
+  "project": {
+    "id": "replace-course-video-id",
+    "title": "Replace with course video title",
+    "owner": "Replace with faculty owner",
+    "courseCode": "COURSE-000",
+    "department": "Replace with department",
+    "audience": "enrolled students"
+  },
+  "dataPolicy": {
+    "classification": "internal",
+    "hostedConsent": true,
+    "allowedHostedProviders": [
+      "anthropic-planning",
+      "openai-image",
+      "openai-video",
+      "openai-transcription",
+      "openai-embedding",
+      "openai-moderation",
+      "edge-narration"
+    ]
+  },
+  "providers": {
+    "anthropic-planning": {
+      "adapter": "anthropic",
+      "executionLocation": "hosted",
+      "apiKeyEnv": "ANTHROPIC_API_KEY",
+      "model": "REPLACE_WITH_EXPLICIT_ANTHROPIC_MODEL_ID",
+      "capabilities": ["text.generate", "research.search"]
+    },
+    "openai-image": {
+      "adapter": "openai",
+      "executionLocation": "hosted",
+      "apiKeyEnv": "OPENAI_API_KEY",
+      "model": "REPLACE_WITH_EXPLICIT_OPENAI_IMAGE_MODEL_ID",
+      "capabilities": ["image.generate"]
+    },
+    "openai-video": {
+      "adapter": "openai",
+      "executionLocation": "hosted",
+      "apiKeyEnv": "OPENAI_API_KEY",
+      "model": "REPLACE_WITH_EXPLICIT_OPENAI_VIDEO_MODEL_ID",
+      "capabilities": ["video.generate"]
+    },
+    "openai-transcription": {
+      "adapter": "openai",
+      "executionLocation": "hosted",
+      "apiKeyEnv": "OPENAI_API_KEY",
+      "model": "REPLACE_WITH_EXPLICIT_OPENAI_TRANSCRIPTION_MODEL_ID",
+      "capabilities": ["speech.transcribe"]
+    },
+    "openai-embedding": {
+      "adapter": "openai",
+      "executionLocation": "hosted",
+      "apiKeyEnv": "OPENAI_API_KEY",
+      "model": "REPLACE_WITH_EXPLICIT_OPENAI_EMBEDDING_MODEL_ID",
+      "capabilities": ["embedding.create"]
+    },
+    "openai-moderation": {
+      "adapter": "openai",
+      "executionLocation": "hosted",
+      "apiKeyEnv": "OPENAI_API_KEY",
+      "model": "REPLACE_WITH_EXPLICIT_OPENAI_MODERATION_MODEL_ID",
+      "capabilities": ["moderation.classify"]
+    },
+    "edge-narration": {
+      "adapter": "edge-tts",
+      "executionLocation": "hosted",
+      "model": "edge-tts-7.2.8",
+      "voice": "en-US-AndrewMultilingualNeural",
+      "rate": "+0%",
+      "pitch": "+0Hz"
+    }
+  },
+  "roles": {
+    "planner": { "primary": "anthropic-planning", "fallbacks": [] },
+    "research": { "primary": "anthropic-planning", "fallbacks": [] },
+    "narration": { "primary": "edge-narration", "fallbacks": [] },
+    "transcription": { "primary": "openai-transcription", "fallbacks": [] },
+    "image": { "primary": "openai-image", "fallbacks": [] },
+    "video": { "primary": "openai-video", "fallbacks": [] },
+    "embedding": { "primary": "openai-embedding", "fallbacks": [] },
+    "moderation": { "primary": "openai-moderation", "fallbacks": [] }
+  },
+  "workflow": {
+    "groundingMode": "source-pack",
+    "determinism": "record",
+    "approvals": ["script", "visuals", "release"],
+    "outputRoot": "output/documentary",
+    "cacheRoot": ".video-cache",
+    "maxCostUsd": 10,
+    "allowUnknownCost": true
+  },
+  "brandPack": null
+}

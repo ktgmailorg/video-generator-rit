@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "preset": "rit-course",
+  "project": {
+    "id": "local-studio-course-video",
+    "title": "Local Studio Course Video",
+    "owner": "RIT faculty pilot",
+    "courseCode": "",
+    "department": "",
+    "audience": "students"
+  },
+  "dataPolicy": {
+    "classification": "restricted",
+    "hostedConsent": false,
+    "allowedHostedProviders": []
+  },
+  "providers": {
+    "bonsai-27b-planner": {
+      "adapter": "openai-compatible",
+      "executionLocation": "local",
+      "baseUrl": "http://127.0.0.1:8080/v1",
+      "model": "Bonsai-27B-Q1_0.gguf",
+      "modelDigestEnv": "BONSAI_27B_SHA256",
+      "requireModelDigest": true,
+      "supportsStructuredOutput": true,
+      "supportsSeed": true,
+      "capabilities": ["text.generate"],
+      "estimatedCostUsd": 0
+    },
+    "comfyui-image": {
+      "adapter": "comfyui",
+      "executionLocation": "local",
+      "baseUrl": "http://127.0.0.1:8188",
+      "model": "REPLACE_WITH_COMFYUI_CHECKPOINT_ID",
+      "capabilities": ["image.generate"],
+      "workflowFile": "examples/comfyui-workflow.image.json",
+      "workflowRevision": "rit-sdxl-image-v1",
+      "requiredModelIdentifiers": [
+        "REPLACE_WITH_INSTALLED_CHECKPOINT.safetensors"
+      ],
+      "bindings": {
+        "prompt": { "nodeId": "6", "input": "text" },
+        "negativePrompt": { "nodeId": "7", "input": "text" },
+        "seed": { "nodeId": "3", "input": "seed" },
+        "width": { "nodeId": "5", "input": "width" },
+        "height": { "nodeId": "5", "input": "height" }
+      }
+    },
+    "piper-female": {
+      "adapter": "cli-bridge",
+      "executionLocation": "local",
+      "command": "node",
+      "args": ["bridges/piper-bridge.mjs"],
+      "healthCommand": "node",
+      "healthArgs": ["--check", "bridges/piper-bridge.mjs"],
+      "requiredFiles": [
+        "REPLACE_WITH_FEMALE_PIPER_VOICE.onnx"
+      ],
+      "model": "REPLACE_WITH_FEMALE_PIPER_VOICE.onnx",
+      "voicePreset": "female",
+      "capabilities": ["speech.synthesize"],
+      "mimeTypes": {
+        "speech.synthesize": ["audio/wav"]
+      },
+      "estimatedCostUsd": 0
+    },
+    "piper-male": {
+      "adapter": "cli-bridge",
+      "executionLocation": "local",
+      "command": "node",
+      "args": ["bridges/piper-bridge.mjs"],
+      "healthCommand": "node",
+      "healthArgs": ["--check", "bridges/piper-bridge.mjs"],
+      "requiredFiles": [
+        "REPLACE_WITH_MALE_PIPER_VOICE.onnx"
+      ],
+      "model": "REPLACE_WITH_MALE_PIPER_VOICE.onnx",
+      "voicePreset": "male",
+      "capabilities": ["speech.synthesize"],
+      "mimeTypes": {
+        "speech.synthesize": ["audio/wav"]
+      },
+      "estimatedCostUsd": 0
+    },
+    "whispercpp-alignment": {
+      "adapter": "cli-bridge",
+      "executionLocation": "local",
+      "command": "node",
+      "args": ["bridges/whispercpp-bridge.mjs"],
+      "healthCommand": "node",
+      "healthArgs": ["--check", "bridges/whispercpp-bridge.mjs"],
+      "requiredFiles": [
+        "REPLACE_WITH_WHISPER_CPP_MODEL.bin"
+      ],
+      "model": "REPLACE_WITH_WHISPER_CPP_MODEL.bin",
+      "capabilities": ["speech.transcribe"],
+      "mimeTypes": {
+        "speech.transcribe": ["application/json"]
+      },
+      "estimatedCostUsd": 0
+    }
+  },
+  "roles": {
+    "planner": { "primary": "bonsai-27b-planner", "fallbacks": [] },
+    "narration": { "primary": "piper-female", "fallbacks": [] },
+    "transcription": {
+      "primary": "whispercpp-alignment",
+      "fallbacks": []
+    },
+    "image": { "primary": "comfyui-image", "fallbacks": [] }
+  },
+  "workflow": {
+    "groundingMode": "source-pack",
+    "determinism": "record",
+    "approvals": ["script", "visuals", "release"],
+    "outputRoot": "output/documentary",
+    "cacheRoot": ".video-cache/v2",
+    "maxCostUsd": 0,
+    "allowUnknownCost": false
+  },
+  "brandPack": null
+}

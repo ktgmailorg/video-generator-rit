@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Local browser studio for creating reviewable RIT course-video drafts."
+    >
+    <title>One-Click AI Video Studio</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="One-Click AI Video Studio home">
+          <span aria-hidden="true">1</span>
+          <strong>One-Click AI <small>Local Video Studio</small></strong>
+        </a>
+        <div class="local-status"><i aria-hidden="true"></i>Running on this machine</div>
+      </header>
+
+      <section class="intro">
+        <div>
+          <p class="eyebrow">RIT AI Club · Local companion</p>
+          <h1>Paste the lesson. Get a complete reviewable video.</h1>
+        </div>
+        <p>
+          Start from an instructor-approved script, or ask the configured AI to
+          draft narration from reviewed source notes. The local pipeline then
+          creates speech, visuals, captions, transcripts, QA, and a rendered
+          draft automatically.
+        </p>
+      </section>
+
+      <section class="workspace">
+        <form id="create-form" class="create-panel">
+          <div class="panel-heading">
+            <div><span>01</span><h2>Course material</h2></div>
+            <p>Nothing is sent to the public pilot website.</p>
+          </div>
+
+          <label for="title">Video title</label>
+          <input
+            id="title"
+            name="title"
+            type="text"
+            required
+            maxlength="180"
+            placeholder="Example: How cache memory reduces access time"
+          >
+
+          <label for="input-mode">Starting point</label>
+          <select id="input-mode" name="inputMode">
+            <option value="script">Use my approved script or transcript</option>
+            <option id="ai-transcript-option" value="generate">Generate a draft transcript with configured AI</option>
+          </select>
+          <p id="transcript-mode-note" class="mode-note">
+            Your narration is preserved. AI planning may organize visuals but
+            does not rewrite the script.
+          </p>
+
+          <div id="upload-row" class="upload-row">
+            <label class="file-button">
+              Load a text, Markdown, VTT, or SRT file
+              <input id="script-file" type="file" accept=".txt,.md,.vtt,.srt,text/plain,text/markdown">
+            </label>
+            <span id="file-name">Or paste below</span>
+          </div>
+
+          <label id="script-label" for="script">Approved script or transcript</label>
+          <textarea
+            id="script"
+            name="script"
+            required
+            maxlength="120000"
+            placeholder="Paste the narration or corrected transcript here…"
+          ></textarea>
+          <div class="field-meta"><span id="script-count">0 words</span><span id="script-target">Target pilot: 300–750 words</span></div>
+
+          <div id="duration-option" class="duration-option" hidden>
+            <label for="target-minutes">Draft transcript length</label>
+            <select id="target-minutes" name="targetMinutes">
+              <option value="2">About 2 minutes</option>
+              <option value="3" selected>About 3 minutes</option>
+              <option value="5">About 5 minutes</option>
+            </select>
+          </div>
+
+          <details>
+            <summary>Sources and production options</summary>
+            <div class="details-content">
+              <label for="source-title">Source-pack label</label>
+              <input
+                id="source-title"
+                name="sourceTitle"
+                type="text"
+                maxlength="180"
+                placeholder="Example: Instructor-reviewed lecture notes"
+              >
+
+              <label for="source-notes">Approved source notes or excerpts</label>
+              <textarea
+                id="source-notes"
+                name="sourceNotes"
+                maxlength="250000"
+                placeholder="Required for AI transcript generation and before an official course release."
+              ></textarea>
+
+              <div class="option-grid">
+                <div>
+                  <label for="voice">Narration voice</label>
+                  <select id="voice" name="voicePreset">
+                    <option value="configured">Configured local voice</option>
+                    <option value="female">Configured local female voice</option>
+                    <option value="male">Configured local male voice</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="visual-mode">Visuals</label>
+                  <select id="visual-mode" name="visualMode">
+                    <option value="deterministic">Educational diagrams · recommended</option>
+                    <option value="generated">Configured AI image provider</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <label class="acknowledgement">
+            <input id="acknowledged" name="acknowledged" type="checkbox" required>
+            <span>
+              I have permission to use this material and understand that the
+              this studio enforces local-only processing and will stop if any
+              selected provider route is hosted.
+            </span>
+          </label>
+
+          <button class="create-button" type="submit" disabled>
+            <span>Create draft video</span><b aria-hidden="true">→</b>
+          </button>
+          <p id="form-error" class="form-error" role="alert" hidden></p>
+        </form>
+
+        <aside class="run-panel">
+          <div class="panel-heading dark-heading">
+            <div><span>02</span><h2>Production</h2></div>
+            <p id="configuration-state">Checking the local runtime…</p>
+          </div>
+
+          <div id="ready-card" class="ready-card" hidden>
+            <div><i aria-hidden="true"></i><strong>Local runtime ready</strong></div>
+            <dl>
+              <div><dt>Workflow</dt><dd id="config-preset">—</dd></div>
+              <div><dt>Data</dt><dd id="config-data">—</dd></div>
+              <div><dt>Providers</dt><dd id="config-providers">—</dd></div>
+            </dl>
+          </div>
+
+          <div id="idle-state" class="idle-state">
+            <span aria-hidden="true">▶</span>
+            <h3>Ready when the script is.</h3>
+            <p>
+              One click starts planning, narration, visual production,
+              captioning, rendering, and reproducibility recording.
+            </p>
+          </div>
+
+          <div id="progress-state" class="progress-state" hidden>
+            <div class="progress-orbit" aria-hidden="true"><span></span></div>
+            <p class="status-label">Current stage</p>
+            <h3 id="job-stage">Preparing the project</h3>
+            <ol id="job-log" aria-label="Production events"></ol>
+          </div>
+
+          <div id="result-state" class="result-state" hidden>
+            <div class="result-badge">Reviewable draft ready</div>
+            <h3 id="result-title">Course video</h3>
+            <video id="result-video" controls playsinline preload="metadata"></video>
+            <div class="result-links">
+              <a id="download-video" href="#">Download video</a>
+              <a id="download-captions" href="#">VTT captions</a>
+              <a id="download-captions-srt" href="#">SRT captions</a>
+              <a id="download-transcript" href="#">Text transcript</a>
+              <a id="download-transcript-html" href="#">HTML transcript</a>
+              <a id="download-quality-report" href="#">QA report</a>
+              <a id="download-run-lock" href="#">Run record</a>
+              <a id="download-generated-transcript" href="#" hidden>AI transcript draft</a>
+            </div>
+            <div id="quality-notice" class="quality-notice" hidden>
+              <strong>Review still required</strong>
+              <ul id="quality-list"></ul>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <footer>
+        <span>Local browser interface</span>
+        <p>
+          The studio creates drafts. Instructor approval, accessibility review,
+          and release approval remain separate decisions.
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

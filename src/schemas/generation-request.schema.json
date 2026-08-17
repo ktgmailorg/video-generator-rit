@@ -1,0 +1,58 @@
+{
+  "$id": "https://github.com/ktgmailorg/video-generator-rit/schemas/generation-request-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "capability", "input"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "capability": {
+      "enum": [
+        "text.generate",
+        "image.generate",
+        "video.generate",
+        "speech.synthesize",
+        "speech.transcribe",
+        "embedding.create",
+        "moderation.classify",
+        "research.search"
+      ]
+    },
+    "model": { "type": "string", "minLength": 1 },
+    "input": { "type": "object" },
+    "schemaName": { "type": "string" },
+    "outputSchema": { "type": "object" },
+    "parameters": { "type": "object" },
+    "repairParameters": { "type": "object" },
+    "seed": { "type": ["integer", "string"] },
+    "dataClassification": {
+      "enum": ["public", "internal", "restricted"]
+    },
+    "expectedOutput": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "mimeTypes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "maximumBytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "metadata": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "capability": {
+            "not": {
+              "enum": ["speech.synthesize", "speech.transcribe"]
+            }
+          }
+        }
+      },
+      "then": { "required": ["model"] }
+    }
+  ]
+}

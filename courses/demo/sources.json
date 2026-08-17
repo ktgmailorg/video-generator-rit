@@ -1,0 +1,36 @@
+{
+  "sources": [
+    {
+      "id": "planning-source",
+      "title": "Project note: one shared episode specification",
+      "type": "note",
+      "uri": "project-note:episode-spec-v2",
+      "content": "Authored storyboards and AI-assisted topic planning both produce EpisodeSpec v2. The shared specification records learning objectives, narration, visual directions, claims, citations, pronunciations, accessibility descriptions, and optional generated-asset requests before rendering begins.",
+      "verified": true
+    },
+    {
+      "id": "provider-source",
+      "title": "Project note: explicit provider capabilities",
+      "type": "note",
+      "uri": "project-note:provider-routing",
+      "content": "The capability router supports text generation, image generation, video generation, speech synthesis, transcription, embeddings, moderation, and optional research. Each configured provider advertises its supported capabilities and execution location. Restricted data is prevented from reaching hosted providers.",
+      "verified": true
+    },
+    {
+      "id": "replay-source",
+      "title": "Project note: recorded and frozen replay",
+      "type": "note",
+      "uri": "project-note:recorded-replay",
+      "content": "Record mode freezes accepted provider outputs in a content-addressed store and records their checksums and provider metadata. Frozen mode prohibits provider and network generation, verifies retained artifacts, and reuses the exact accepted bytes. Seeds are recorded when available but are not treated as proof that a fresh hosted generation will repeat.",
+      "verified": true
+    },
+    {
+      "id": "release-source",
+      "title": "Project note: review and accessible release",
+      "type": "note",
+      "uri": "project-note:reviewable-release",
+      "content": "RIT course workflows bind script and evidence approval, visual approval, and final release approval to exact checksums. The release package includes an H.264 video, VTT and SRT captions, plain-text and HTML transcripts, chapters, bibliography, claim-to-source report, asset credits, AI disclosure, accessibility QA, production QA, and the immutable run lock. Panopto upload remains manual.",
+      "verified": true
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "preset": "rit-course",
+  "project": {
+    "id": "replace-local-course-video-id",
+    "title": "Replace with course video title",
+    "owner": "Replace with faculty owner",
+    "courseCode": "COURSE-000",
+    "department": "Replace with department",
+    "audience": "enrolled students"
+  },
+  "dataPolicy": {
+    "classification": "restricted",
+    "hostedConsent": false,
+    "allowedHostedProviders": []
+  },
+  "providers": {
+    "bonsai-27b-planner": {
+      "adapter": "openai-compatible",
+      "executionLocation": "local",
+      "baseUrl": "http://127.0.0.1:8080/v1",
+      "model": "Bonsai-27B-Q1_0.gguf",
+      "modelDigestEnv": "BONSAI_27B_SHA256",
+      "requireModelDigest": true,
+      "supportsStructuredOutput": true,
+      "supportsSeed": true,
+      "capabilities": ["text.generate"],
+      "estimatedCostUsd": 0
+    },
+    "ollama-text": {
+      "adapter": "ollama",
+      "executionLocation": "local",
+      "baseUrl": "http://127.0.0.1:11434/v1",
+      "model": "REPLACE_WITH_INSTALLED_OLLAMA_MODEL",
+      "capabilities": ["text.generate", "embedding.create"]
+    },
+    "comfyui-image": {
+      "adapter": "comfyui",
+      "executionLocation": "local",
+      "baseUrl": "http://127.0.0.1:8188",
+      "model": "REPLACE_WITH_COMFYUI_CHECKPOINT_ID",
+      "capabilities": ["image.generate"],
+      "workflowFile": "examples/comfyui-workflow.image.json",
+      "workflowRevision": "rit-sdxl-image-v1",
+      "requiredModelIdentifiers": [
+        "REPLACE_WITH_INSTALLED_CHECKPOINT.safetensors"
+      ],
+      "bindings": {
+        "prompt": { "nodeId": "6", "input": "text" },
+        "negativePrompt": { "nodeId": "7", "input": "text" },
+        "seed": { "nodeId": "3", "input": "seed" },
+        "width": { "nodeId": "5", "input": "width" },
+        "height": { "nodeId": "5", "input": "height" }
+      }
+    },
+    "piper-speech": {
+      "adapter": "cli-bridge",
+      "executionLocation": "local",
+      "command": "node",
+      "args": ["bridges/piper-bridge.mjs"],
+      "healthCommand": "node",
+      "healthArgs": ["--check", "bridges/piper-bridge.mjs"],
+      "requiredFiles": [
+        "REPLACE_WITH_PIPER_VOICE_MODEL.onnx"
+      ],
+      "model": "REPLACE_WITH_PIPER_VOICE_MODEL.onnx",
+      "capabilities": ["speech.synthesize"],
+      "mimeTypes": {
+        "speech.synthesize": ["audio/wav"]
+      },
+      "estimatedCostUsd": 0
+    },
+    "whispercpp-alignment": {
+      "adapter": "cli-bridge",
+      "executionLocation": "local",
+      "command": "node",
+      "args": ["bridges/whispercpp-bridge.mjs"],
+      "healthCommand": "node",
+      "healthArgs": ["--check", "bridges/whispercpp-bridge.mjs"],
+      "requiredFiles": [
+        "REPLACE_WITH_WHISPER_CPP_MODEL.bin"
+      ],
+      "model": "REPLACE_WITH_WHISPER_CPP_MODEL.bin",
+      "capabilities": ["speech.transcribe"],
+      "mimeTypes": {
+        "speech.transcribe": ["application/json"]
+      },
+      "estimatedCostUsd": 0
+    }
+  },
+  "roles": {
+    "planner": { "primary": "bonsai-27b-planner", "fallbacks": [] },
+    "narration": { "primary": "piper-speech", "fallbacks": [] },
+    "transcription": {
+      "primary": "whispercpp-alignment",
+      "fallbacks": []
+    },
+    "image": { "primary": "comfyui-image", "fallbacks": [] },
+    "embedding": { "primary": "ollama-text", "fallbacks": [] }
+  },
+  "workflow": {
+    "groundingMode": "source-pack",
+    "determinism": "record",
+    "approvals": ["script", "visuals", "release"],
+    "outputRoot": "output/documentary",
+    "cacheRoot": ".video-cache/v2",
+    "maxCostUsd": 0,
+    "allowUnknownCost": false
+  },
+  "brandPack": null
+}

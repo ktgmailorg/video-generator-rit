@@ -1,0 +1,40 @@
+{
+  "sources": [
+    {
+      "id": "riscv-isa",
+      "title": "RISC-V Unprivileged ISA Specification, Version 20260120",
+      "type": "url",
+      "uri": "https://docs.riscv.org/reference/isa/unpriv/unpriv-index.html",
+      "author": "RISC-V International",
+      "content": "RISC-V is an open standard instruction set architecture. In RV32I, the integer register width XLEN is 32 bits. The base integer programmer's model includes 32 integer registers, with x0 hardwired to zero, and a program counter. RV32I register-register arithmetic instructions use the R-type format. ADD reads the rs1 and rs2 registers, adds their values, and writes the low XLEN bits of the sum to rd. Arithmetic overflow is ignored rather than causing a trap. The ADD encoding uses opcode 0110011, funct3 000, and funct7 0000000.",
+      "verified": true
+    },
+    {
+      "id": "cs61c-five-stage",
+      "title": "The RISC-V 5-Stage Pipeline",
+      "type": "url",
+      "uri": "https://notes.cs61c.org/content/pipeline/five-stage-pipeline/",
+      "author": "UC Berkeley CS61C",
+      "content": "The CS61C teaching processor separates instruction execution into five stages. Instruction Fetch fetches the instruction and advances the program counter. Instruction Decode determines the operation and reads the register file. Execute uses the arithmetic logic unit. Memory Access loads or stores data for memory instructions. Write Back writes a result to the register file. Pipeline registers between stages retain the data and control signals needed by later stages, allowing different instructions to occupy different stages during the same clock cycle.",
+      "verified": true
+    },
+    {
+      "id": "cs61c-performance",
+      "title": "Pipelining Performance Metrics",
+      "type": "url",
+      "uri": "https://notes.cs61c.org/content/pipeline/",
+      "author": "UC Berkeley CS61C",
+      "content": "Pipelining is used to increase instruction throughput compared with a single-cycle implementation. Throughput is the number of tasks or instructions completed per unit time, while latency is the time required for one task or instruction. Overlapping stages can improve throughput without reducing the latency of an individual instruction.",
+      "verified": true
+    },
+    {
+      "id": "cs61c-hazards",
+      "title": "Pipeline Hazards and Data Forwarding",
+      "type": "url",
+      "uri": "https://notes.cs61c.org/content/pipeline-hazards/",
+      "author": "UC Berkeley CS61C",
+      "content": "A pipeline hazard is a situation in which an instruction cannot execute in its planned clock cycle without incorrect behavior. Structural hazards concern unavailable hardware resources. Data hazards arise from dependencies between instructions. Control hazards arise when the next instruction depends on control flow. Implementations can use stalling, forwarding or bypassing, scheduling, prediction, and flushing as appropriate. Forwarding can route a result from a later pipeline register directly to an ALU input before normal register writeback.",
+      "verified": true
+    }
+  ]
+}

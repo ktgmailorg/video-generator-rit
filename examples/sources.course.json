@@ -1,0 +1,20 @@
+{
+  "sources": [
+    {
+      "id": "canonical-source",
+      "title": "Instructor note: canonical request hashing",
+      "type": "note",
+      "uri": "course-note:canonical-request-hashing",
+      "content": "Canonical serialization sorts object keys and normalizes supported values. Equivalent objects therefore produce the same serialized bytes and the same SHA-256 request key.",
+      "verified": true
+    },
+    {
+      "id": "replay-source",
+      "title": "Instructor note: recorded replay",
+      "type": "note",
+      "uri": "course-note:recorded-replay",
+      "content": "A frozen replay performs no provider or network generation. It verifies the retained artifact checksums and reuses the accepted bytes. A seed alone is not evidence that a hosted generation will repeat.",
+      "verified": true
+    }
+  ]
+}

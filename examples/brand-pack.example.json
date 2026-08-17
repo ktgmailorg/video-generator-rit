@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "replace-with-central-media-pack-id",
+  "version": "replace-with-approved-version",
+  "approvedBy": "Replace with approving RIT brand authority",
+  "usageScope": ["rit-media", "official-release"],
+  "provenance": {
+    "source": "Replace with controlled brand asset source",
+    "approvalRecord": "Replace with approval record identifier"
+  },
+  "assets": [
+    {
+      "role": "logo",
+      "path": "assets/replace-with-approved-logo.svg",
+      "sha256": "REPLACE_WITH_64_CHARACTER_LOWERCASE_SHA256",
+      "usageScope": ["official course video"],
+      "applyTo": ["thumbnail", "shot"],
+      "clearSpace": 56,
+      "maximumWidth": 220,
+      "provenance": {
+        "source": "Replace with controlled download source",
+        "license": "RIT-approved use only"
+      }
+    }
+  ]
+}

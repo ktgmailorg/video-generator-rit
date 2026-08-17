@@ -1,0 +1,41 @@
+{
+  "$id": "https://github.com/ktgmailorg/video-generator-rit/schemas/generation-result-v1.json",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "output",
+    "artifacts",
+    "rawResponse",
+    "usage",
+    "costUsd",
+    "modelRevision",
+    "finishReason"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "output": { "type": "object" },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sha256", "size", "mimeType"],
+        "properties": {
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "size": { "type": "integer", "minimum": 0 },
+          "mimeType": { "type": "string" },
+          "filename": { "type": "string" }
+        }
+      }
+    },
+    "rawResponse": {
+      "type": "object",
+      "required": ["sha256", "size", "mimeType"]
+    },
+    "usage": { "type": "object" },
+    "costUsd": { "type": ["number", "null"], "minimum": 0 },
+    "requestId": { "type": "string" },
+    "modelRevision": { "type": "string" },
+    "finishReason": { "type": "string" }
+  }
+}

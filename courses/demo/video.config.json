@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "preset": "rit-course",
+  "project": {
+    "id": "one-click-ai-video-pilot-demo",
+    "title": "A Reviewable Path from Sources to Video",
+    "owner": "Kenju Tomita",
+    "courseCode": "RIT AI CLUB",
+    "department": "RIT AI Club",
+    "audience": "RIT faculty, staff, students, and campus organizations"
+  },
+  "dataPolicy": {
+    "classification": "public",
+    "hostedConsent": true,
+    "allowedHostedProviders": ["edge-narration"]
+  },
+  "providers": {
+    "edge-narration": {
+      "adapter": "edge-tts",
+      "executionLocation": "hosted",
+      "model": "edge-tts-7.2.8",
+      "voice": "en-US-AndrewMultilingualNeural",
+      "rate": "+12%",
+      "pitch": "+0Hz"
+    }
+  },
+  "roles": {
+    "narration": {
+      "primary": "edge-narration",
+      "fallbacks": []
+    }
+  },
+  "workflow": {
+    "groundingMode": "source-pack",
+    "determinism": "record",
+    "approvals": ["script", "visuals", "release"],
+    "outputRoot": ".demo-output/pilot",
+    "cacheRoot": ".video-cache/v2",
+    "maxCostUsd": 0,
+    "allowUnknownCost": false
+  },
+  "brandPack": null
+}

@@ -1,0 +1,37 @@
+{
+  "$id": "https://github.com/ktgmailorg/video-generator-rit/schemas/run-lock-v1.json",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "runId",
+    "status",
+    "mode",
+    "inputSha256",
+    "configSha256",
+    "gitRevision",
+    "toolchain",
+    "providers",
+    "requests",
+    "artifacts",
+    "approvals",
+    "stages"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "runId": { "type": "string", "minLength": 1 },
+    "status": {
+      "enum": ["planned", "running", "awaiting-approval", "complete", "failed"]
+    },
+    "mode": { "enum": ["fresh", "record", "frozen"] },
+    "inputSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "configSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "gitRevision": { "type": "string" },
+    "toolchain": { "type": "object" },
+    "providers": { "type": "object" },
+    "requests": { "type": "array" },
+    "artifacts": { "type": "array" },
+    "approvals": { "type": "array" },
+    "stages": { "type": "array" }
+  }
+}

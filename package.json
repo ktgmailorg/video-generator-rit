@@ -1,0 +1,53 @@
+{
+  "name": "video-generator-rit",
+  "version": "0.3.0",
+  "description": "Provider-agnostic, reproducible pipeline and local studio for AI-assisted course videos. A community project of the RIT AI Club.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ktgmailorg/video-generator-rit.git"
+  },
+  "keywords": [
+    "video",
+    "course",
+    "education",
+    "tts",
+    "ai",
+    "ffmpeg",
+    "captions",
+    "accessibility"
+  ],
+  "type": "module",
+  "bin": {
+    "rit-video": "bin/rit-video.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs",
+    "./providers": "./src/providers/index.mjs",
+    "./schemas/*": "./src/schemas/*"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "video:prepare": "node scripts/produce-documentary.mjs prepare",
+    "video:voice": "node scripts/produce-documentary.mjs voice",
+    "video:render": "node scripts/produce-documentary.mjs render",
+    "produce": "node scripts/produce-documentary.mjs all",
+    "humor:prompt": "node scripts/print-humor-prompt.mjs",
+    "illustrated:demo": "node examples/illustrated-demo.mjs",
+    "courses:create": "node scripts/create-expanded-long-form-lessons.mjs",
+    "courses:create-cs": "node scripts/create-cs-full-lessons.mjs",
+    "courses:generate-bonsai": "node scripts/generate-bonsai-course-batch.mjs",
+    "courses:render": "node scripts/render-long-form-lessons.mjs",
+    "rit-video": "node bin/rit-video.mjs",
+    "studio": "node studio/server.mjs",
+    "studio:launch": "node studio/launcher.mjs",
+    "test:determinism": "node --test tests/e2e.test.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "sharp": "0.35.3"
+  }
+}

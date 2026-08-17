@@ -1,0 +1,46 @@
+{
+  "$id": "https://github.com/ktgmailorg/video-generator-rit/schemas/bridge-envelope-v1.json",
+  "oneOf": [
+    {
+      "title": "Bridge request",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "request"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "request": {
+          "$ref": "generation-request-v1.json"
+        }
+      }
+    },
+    {
+      "title": "Bridge response",
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["schemaVersion", "output", "artifacts"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "output": { "type": "object" },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["base64", "mimeType"],
+            "properties": {
+              "base64": { "type": "string" },
+              "mimeType": { "type": "string" },
+              "filename": { "type": "string" }
+            }
+          }
+        },
+        "usage": { "type": "object" },
+        "costUsd": { "type": ["number", "null"], "minimum": 0 },
+        "requestId": { "type": "string" },
+        "modelRevision": { "type": "string" },
+        "finishReason": { "type": "string" },
+        "raw": {}
+      }
+    }
+  ]
+}

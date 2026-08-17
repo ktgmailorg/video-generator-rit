@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "codex/**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.1
+          cache: npm
+      - name: Install FFmpeg and poppler (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-liberation poppler-utils
+      - name: Install FFmpeg and poppler (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ffmpeg poppler
+      - name: Install FFmpeg and poppler (Windows)
+        if: runner.os == 'Windows'
+        run: choco install -y ffmpeg poppler
+      - run: npm ci
+      - name: Syntax check
+        if: runner.os != 'Windows'
+        run: find bin bridges examples scripts src tests -name '*.mjs' -print0 | xargs -0 -n1 node --check
+      - run: npm test
+      - name: Audit
+        if: runner.os == 'Linux'
+        run: npm audit --audit-level=high

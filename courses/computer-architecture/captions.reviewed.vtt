@@ -1,0 +1,216 @@
+WEBVTT
+
+1
+00:00:00.050 --> 00:00:04.453
+Computer architecture becomes easier
+when we separate what software is promised
+
+2
+00:00:04.453 --> 00:00:06.655
+from how hardware keeps that promise.
+
+3
+00:00:06.655 --> 00:00:11.373
+The RISC-V instruction set defines
+what an ADD instruction means and how its
+
+4
+00:00:11.373 --> 00:00:12.384
+fields are encoded.
+
+5
+00:00:12.384 --> 00:00:17.651
+A classic five-stage pipeline is one
+microarchitecture that can implement that
+
+6
+00:00:17.651 --> 00:00:18.090
+contract.
+
+7
+00:00:18.090 --> 00:00:24.212
+We will trace one RV32I instruction:
+add x5, x6, x7.
+
+8
+00:00:24.314 --> 00:00:29.929
+In this RV32I example, the
+instruction word is hexadecimal zero zero
+
+9
+00:00:29.929 --> 00:00:32.736
+seven three zero two B three.
+
+10
+00:00:32.736 --> 00:00:38.291
+The opcode, funct three, and funct
+seven fields select register-register ADD.
+
+11
+00:00:38.291 --> 00:00:41.555
+The source fields name x6 and x7.
+
+12
+00:00:41.555 --> 00:00:44.738
+The destination field names x5.
+
+13
+00:00:44.738 --> 00:00:50.132
+Decode is not guessing from assembly
+text; the hardware receives these exact bits.
+
+14
+00:00:50.234 --> 00:00:56.481
+Assume the program counter is zero x
+one thousand and this teaching example uses
+
+15
+00:00:56.481 --> 00:00:59.396
+32-bit RV32I instructions without the
+compressed extension.
+
+16
+00:00:59.396 --> 00:01:04.389
+Fetch uses that address to read the
+instruction word, while the sequential next
+
+17
+00:01:04.389 --> 00:01:06.885
+address becomes zero x one thousand four.
+
+18
+00:01:06.885 --> 00:01:11.843
+Decode separates the fields,
+generates control signals, and asks the
+
+19
+00:01:11.843 --> 00:01:14.547
+register file for x6 and x7.
+
+20
+00:01:14.666 --> 00:01:19.546
+Suppose x6 contains nineteen and x7
+contains twenty-three.
+
+21
+00:01:19.546 --> 00:01:24.566
+In Execute, operand-select logic
+sends both register values to the arithmetic
+
+22
+00:01:24.566 --> 00:01:25.403
+logic unit.
+
+23
+00:01:25.403 --> 00:01:29.627
+The ADD control selects integer
+addition, producing forty-two.
+
+24
+00:01:29.627 --> 00:01:34.940
+For RV32I, ADD keeps the low
+thirty-two bits of the result.
+
+25
+00:01:34.940 --> 00:01:38.111
+Arithmetic overflow does not raise
+an exception.
+
+26
+00:01:38.210 --> 00:01:41.308
+ADD does not need a data-memory read
+or write.
+
+27
+00:01:41.308 --> 00:01:45.612
+In this five-stage teaching
+processor, the value still advances through
+
+28
+00:01:45.612 --> 00:01:49.525
+the pipeline registers that separate Execute,
+Memory, and Write Back.
+
+29
+00:01:49.525 --> 00:01:54.173
+Those registers keep the result,
+destination number, and write-enable control
+
+30
+00:01:54.173 --> 00:01:54.595
+aligned.
+
+31
+00:01:54.595 --> 00:01:58.553
+At Write Back, the processor commits
+forty-two into x5.
+
+32
+00:01:58.658 --> 00:02:01.420
+The payoff appears when more
+instructions follow.
+
+33
+00:02:01.420 --> 00:02:06.922
+While ADD is in Execute, a second
+independent instruction can be in Decode and a
+
+34
+00:02:06.922 --> 00:02:08.642
+third can be in Fetch.
+
+35
+00:02:08.642 --> 00:02:13.316
+After the pipeline fills, this
+idealized sequence can complete one
+
+36
+00:02:13.316 --> 00:02:14.591
+instruction per cycle.
+
+37
+00:02:14.591 --> 00:02:16.119
+That improves throughput.
+
+38
+00:02:16.119 --> 00:02:21.073
+It does not mean one instruction
+suddenly crosses all five stages in one cycle.
+
+39
+00:02:21.170 --> 00:02:25.470
+This clean timing chart assumes
+independent instructions and available
+
+40
+00:02:25.470 --> 00:02:25.900
+hardware.
+
+41
+00:02:25.900 --> 00:02:31.085
+If the next instruction needs x5
+before normal writeback, the processor has a
+
+42
+00:02:31.085 --> 00:02:31.826
+data hazard.
+
+43
+00:02:31.826 --> 00:02:34.580
+It may forward the result or insert
+a bubble.
+
+44
+00:02:34.580 --> 00:02:39.372
+Branches create control hazards
+because already-fetched work may be wrong.
+
+45
+00:02:39.372 --> 00:02:44.918
+Real pipelines add detection and
+recovery logic, but the governing rule stays
+
+46
+00:02:44.918 --> 00:02:48.758
+simple: preserve the ISA result first, then
+optimize throughput.
