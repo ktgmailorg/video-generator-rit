@@ -4,7 +4,7 @@
 
 - [x] Apache 2.0 license, DCO-based contributing, code of conduct
 - [x] General-audience README and User Guide
-- [ ] Cross-OS CI (Linux, macOS, Windows)
+- [x] Cross-OS CI (Linux, macOS, Windows)
 - [ ] Demo video on the README, made with the tool itself
 - [ ] Good-first-issue backlog
 
@@ -13,15 +13,15 @@
 Goal: a non-technical user downloads one installer and makes a video with
 zero terminal use and zero API keys.
 
-- [ ] `desktop/` Electron shell that boots `studio/server.mjs` in-process
-      and loads the existing Studio UI
-- [ ] Bundled FFmpeg/FFprobe (per-platform static builds)
+- [x] `desktop/` Electron shell that boots `studio/server.mjs` in a utility
+      process and loads the existing Studio UI
+- [x] Bundled FFmpeg/FFprobe (per-platform static builds)
 - [ ] Pure-Node Edge TTS path (drop the `uvx` requirement); optional bundled
       Piper voices for fully-offline narration
 - [ ] First-run wizard: Free mode (no keys) vs. bring-your-own keys
       (stored with Electron `safeStorage`)
 - [ ] `rit-video doctor` surfaced as a setup checklist screen
-- [ ] Installers: macOS dmg, Windows NSIS, Linux AppImage/deb via
+- [x] Installers: macOS dmg, Windows NSIS, Linux AppImage/deb via
       electron-builder + GitHub Actions release workflow
 - [ ] Auto-update via electron-updater
 - [ ] Packaged-app smoke test (launch → frozen-mode render → assert output)

@@ -1,0 +1,49 @@
+appId: io.github.ktgmailorg.rit-video-studio
+productName: RIT Video Studio
+asar: false
+directories:
+  output: dist
+
+files:
+  - main.mjs
+  - package.json
+  - node_modules/**
+
+# The pipeline (server, providers, renderer) ships as plain files next to the
+# app so the studio server runs it with the bundled Node runtime.
+extraResources:
+  - from: ..
+    to: pipeline
+    filter:
+      - package.json
+      - src/**
+      - studio/**
+      - bin/**
+      - bridges/**
+      - examples/**
+      - node_modules/**
+      - "!node_modules/.cache/**"
+  # Static FFmpeg/FFprobe binaries resolved at build time by scripts/copy-ffmpeg.mjs.
+  - from: desktop-bin
+    to: desktop-bin
+
+beforePack: scripts/copy-ffmpeg.mjs
+
+mac:
+  category: public.app-category.education
+  target:
+    - dmg
+    - zip
+win:
+  target:
+    - nsis
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Education
+
+publish:
+  provider: github
+  owner: ktgmailorg
+  repo: video-generator-rit
