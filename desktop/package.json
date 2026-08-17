@@ -1,6 +1,6 @@
 {
   "name": "rit-video-studio-desktop",
-  "version": "0.4.0",
+  "version": "0.4.0-beta.1",
   "description": "Desktop app for the RIT Course Video Generator studio",
   "license": "Apache-2.0",
   "private": true,

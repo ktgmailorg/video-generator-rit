@@ -1,8 +1,9 @@
 appId: io.github.ktgmailorg.rit-video-studio
 productName: RIT Video Studio
-asar: false
+asar: true
 directories:
   output: dist
+  buildResources: build
 
 files:
   - main.mjs
@@ -47,3 +48,4 @@ publish:
   provider: github
   owner: ktgmailorg
   repo: video-generator-rit
+  releaseType: release
