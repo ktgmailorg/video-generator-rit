@@ -832,6 +832,13 @@ test("course renderer provides deterministic RISC-V teaching diagrams", () => {
 
 test("course renderer provides deterministic academic showcase diagrams", () => {
   const templates = [
+    ["showcase-treaty-bargain", "KEEPS ITS PROMISE"],
+    ["showcase-regime-tiers", "SORTED BY A DATE"],
+    ["showcase-argument-chain", "INEQUALITY JUSTIFIED"],
+    ["showcase-institutional-network", "ATTENTION SHAPES ADVICE"],
+    ["showcase-case-contrast", "WATCHING STATE"],
+    ["showcase-time-horizon", "NOT SCHEDULED"],
+    ["showcase-policy-fork", "EXCLUDE EACH OTHER"],
     ["showcase-resonance", "RESONANT REGION"],
     ["showcase-pid", "PID CONTROLLER"],
     ["showcase-spectroscopy", "A SPECTRAL FINGERPRINT"],
@@ -1279,4 +1286,107 @@ test("course thumbnails use reviewer-neutral language", () => {
   assert.match(thumbnail, /Viable Venture/);
   assert.doesNotMatch(thumbnail, /Human reviewed/);
   assert.doesNotMatch(thumbnail, /Instructor reviewed/);
+});
+
+test("policy directions select international-relations teaching scenes", () => {
+  const cases = [
+    [
+      "The bargain at the centre of the treaty",
+      "Show the three-part bargain and mark Article VI as unmet.",
+      "showcase-treaty-bargain",
+    ],
+    [
+      "Who the treaty sorts",
+      "Contrast recognized holders with everyone else, sorted by a date.",
+      "showcase-regime-tiers",
+    ],
+    [
+      "How inequality becomes moral",
+      "Walk the chain of reasoning from assumption to conclusion.",
+      "showcase-argument-chain",
+    ],
+    [
+      "Who is paid to think about this",
+      "Trace philanthropic funding through think tanks into policy relevance.",
+      "showcase-institutional-network",
+    ],
+    [
+      "Two states, two outcomes",
+      "Set contrasting cases side by side and name the divergent outcomes.",
+      "showcase-case-contrast",
+    ],
+    [
+      "Why the argument is about time",
+      "Show that unipolar equilibrium holds for now and then erodes over time.",
+      "showcase-time-horizon",
+    ],
+    [
+      "The choice that remains",
+      "Present two roads that are mutually exclusive: accept the spread, or a world state.",
+      "showcase-policy-fork",
+    ],
+  ];
+  for (const [title, visualDirection, expected] of cases) {
+    assert.equal(
+      resolveCourseVisualTemplate({ title, visualDirection }),
+      expected,
+      title,
+    );
+  }
+});
+
+test("international-relations vocabulary does not steal technical scenes", () => {
+  // These words are claimed by the systems, security, and signals rules, but in
+  // a policy lesson they must resolve to a policy family instead.
+  const collisions = [
+    [
+      "Consensus at the review conference",
+      "The conference reached consensus by quorum, and the bargain holds.",
+      "showcase-treaty-bargain",
+    ],
+    [
+      "An adversary that cannot be coerced",
+      "Explain why unipolar equilibrium breaks once a rival can retaliate.",
+      "showcase-time-horizon",
+    ],
+    [
+      "Signalling resolve",
+      "Two roads remain, and they are mutually exclusive.",
+      "showcase-policy-fork",
+    ],
+    [
+      "A frozen hierarchy",
+      "Recognized holders sit above everyone else, sorted by a date.",
+      "showcase-regime-tiers",
+    ],
+  ];
+  for (const [title, visualDirection, expected] of collisions) {
+    assert.equal(
+      resolveCourseVisualTemplate({ title, visualDirection }),
+      expected,
+      title,
+    );
+  }
+});
+
+test("policy lesson directions never fall through to a generic course card", () => {
+  // resolveCourseVisualTemplate returning null is exactly what produces the
+  // "generic course cards remain" release blocker, so every authored policy
+  // direction must resolve to a family.
+  const directions = [
+    ["The bargain", "Mark Article VI as unmet in the three-part bargain."],
+    ["The tiers", "Recognized holders above everyone else."],
+    ["The chain", "Follow the chain of reasoning to its conclusion."],
+    ["The complex", "Follow foundation funding into think tanks."],
+    ["The cases", "Contrasting cases with divergent outcomes."],
+    ["The clock", "What holds for now erodes over time."],
+    ["The fork", "Two roads that are mutually exclusive."],
+  ];
+  for (const [title, visualDirection] of directions) {
+    assert.notEqual(
+      resolveCourseVisualTemplate({ title, visualDirection }),
+      null,
+      `${title} would render a generic course card`,
+    );
+  }
 });

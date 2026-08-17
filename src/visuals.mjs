@@ -262,6 +262,18 @@ function inferAcademicTemplate(section) {
     .toLowerCase()
     .replace(/^template:academic-process\s*\|\s*/i, "");
   const rules = [
+    // Policy, treaty, and international-relations families run first on
+    // purpose: political-science prose reuses words the technical rules below
+    // claim ("consensus", "quorum", "adversary", "hierarchy", "contrast"), and
+    // a beat that matches nothing renders a generic course card, which is a
+    // release blocker.
+    [/(?:treaty bargain|grand bargain|three.part bargain|npt bargain|article vi|reciprocal (?:promise|obligation)|bargain (?:holds|struck))/, "showcase-treaty-bargain"],
+    [/(?:haves and have.nots|nuclear haves|two classes of state|tiered membership|recognized holders|sorted by a date|frozen by a (?:test )?date)/, "showcase-regime-tiers"],
+    [/(?:numbered premise|premises? lead|syllogism|chain of reasoning|argument chain|reasoning chain|assumption (?:leads|licenses))/, "showcase-argument-chain"],
+    [/(?:think tanks?|policy community|epistemic community|philanthropic funding|foundation funding|funding and relevance|policy relevance|institutional ecosystem)/, "showcase-institutional-network"],
+    [/(?:contrasting cases|divergent outcomes|opposite lessons|watching state|one state (?:gave up|renounced))/, "showcase-case-contrast"],
+    [/(?:unipolar|time horizon|geopolitical equilibrium|equilibrium (?:holds|breaks|will not)|erodes over time|holds for now)/, "showcase-time-horizon"],
+    [/(?:two roads|fork in the|mutually exclusive|laissez.faire|world (?:state|government)|only two (?:options|paths))/, "showcase-policy-fork"],
     [/(?:loop invariant|prove correctness|correctness argument|analysis checklist|define i\/o|precondition|postcondition)/, "showcase-analysis-framework"],
     [/(?:recurrence|recursive|recursion tree|divide.and.conquer|master theorem)/, "showcase-recurrence"],
     [/(?:dynamic programming|table filling|memoization|tabulation|cell depends)/, "showcase-dynamic-programming"],
@@ -317,6 +329,13 @@ function academicSceneLabel(template) {
       "showcase-oxygen": "Anatomy model · trace ventilation, diffusion, and transport",
       "showcase-mis": "Business system model · trace an order into a decision",
       "showcase-cryptography": "Cryptographic model · trace data, keys, and verification",
+      "showcase-treaty-bargain": "Treaty bargain · check whether every side keeps its promise",
+      "showcase-regime-tiers": "Regime hierarchy · see who the rule sorts, and how",
+      "showcase-argument-chain": "Argument chain · test each premise before the conclusion",
+      "showcase-institutional-network": "Institutional map · follow funding into expertise and policy",
+      "showcase-case-contrast": "Case contrast · read the lesson a watching state draws",
+      "showcase-time-horizon": "Time horizon · separate what holds now from what erodes",
+      "showcase-policy-fork": "Decision fork · weigh two paths that exclude each other",
     }[template] || "Concept model · connect structure, evidence, and application"
   );
 }
@@ -1232,6 +1251,173 @@ function showcaseVisualBody(
       ${label(960, 565, "QUESTION", 27, "#ffffff")}
       <rect x="690" y="745" width="540" height="78" rx="14" fill="#202020" stroke="${accent}" stroke-width="3"/>
       ${label(960, 795, "GOALS → COURSES → PROJECT", 23, accent)}
+    </g>`;
+  }
+  // Policy and international-relations families. Highlight state is carried by
+  // fill, stroke width, and size together — never by hue alone — so the scene
+  // still reads for a learner who cannot distinguish colour.
+  //
+  // Authoring note: these families take their node labels from the beat's
+  // visual direction through academicDiagramLabels, which mines phrases such as
+  // "from A to B to C" or a parenthesised list. Write the direction so it
+  // supplies every label you want, in order — otherwise the miner will happily
+  // turn your instructions into node text ("SET CONTRASTING CASES SIDE B").
+  // Supplying fewer labels than the family needs pads from the fallbacks below,
+  // which mixes authored and default text and reads incoherently.
+  if (template === "showcase-treaty-bargain") {
+    const strands = academicDiagramLabels(section, 3, [
+      "PEACEFUL USE",
+      "NO NEW WEAPONS",
+      "DISARMAMENT",
+    ]);
+    const unmet = strands.length - 1;
+    return `<g>
+      ${label(960, 330, "A BARGAIN HOLDS ONLY WHILE EVERY SIDE KEEPS ITS PROMISE", 24, accent)}
+      ${strands
+        .map((strand, index) => {
+          const width = 470;
+          const x = 130 + index * 545;
+          const broken = index === unmet;
+          const selected = index === active % strands.length;
+          return `<g>
+            <rect x="${x}" y="410" width="${width}" height="180" rx="20" fill="${selected ? accent : "#202020"}" fill-opacity="${selected ? ".18" : "1"}" stroke="${selected ? accent : secondary}" stroke-width="${selected ? 6 : 2}" stroke-dasharray="${broken ? "14 10" : "0"}"/>
+            ${label(x + width / 2, 500, strand, 24, selected ? accent : "#ffffff")}
+            ${label(x + width / 2, 550, broken ? "UNMET" : "OBSERVED", 19, broken ? accent : "#cfd2d3")}
+          </g>${index < strands.length - 1 ? `<path d="M${x + width} 500h60" stroke="${accent}" stroke-width="6" marker-end="url(#showcase-arrow)"/>` : ""}`;
+        })
+        .join("")}
+      ${label(960, 700, "DROP ONE STRAND AND THE OTHERS LOSE THEIR REASON", 22, secondary)}
+    </g>`;
+  }
+  if (template === "showcase-regime-tiers") {
+    const tiers = academicDiagramLabels(section, 2, [
+      "RECOGNIZED HOLDERS",
+      "EVERYONE ELSE",
+    ]);
+    const holders = 5;
+    return `<g>
+      ${label(960, 330, tiers[0], 26, active % 2 === 0 ? accent : "#ffffff")}
+      ${Array.from({ length: holders }, (_, index) => {
+        const x = 560 + index * 200;
+        const selected = index === active % holders;
+        return `<circle cx="${x}" cy="410" r="${selected ? 48 : 36}" fill="${selected ? accent : "#202020"}" fill-opacity="${selected ? .25 : 1}" stroke="${selected ? accent : secondary}" stroke-width="${selected ? 6 : 3}"/>`;
+      }).join("")}
+      <line x1="160" y1="520" x2="1760" y2="520" stroke="${accent}" stroke-width="5" stroke-dasharray="18 12"/>
+      ${label(960, 556, "SORTED BY A DATE, NOT BY CONDUCT", 21, accent)}
+      <rect x="160" y="610" width="1600" height="170" rx="22" fill="#202020" stroke="${secondary}" stroke-width="2" stroke-opacity=".6"/>
+      ${label(960, 705, tiers[1], 26, active % 2 === 1 ? accent : "#ffffff")}
+    </g>`;
+  }
+  if (template === "showcase-argument-chain") {
+    const steps = academicDiagramLabels(section, 4, [
+      "IDEAL CALLED UNREACHABLE",
+      "ALTERNATIVE CALLED WORSE",
+      "STATUS QUO CALLED MORAL",
+      "INEQUALITY JUSTIFIED",
+    ]);
+    return `<g>
+      ${steps
+        .map((step, index) => {
+          const y = 300 + index * 132;
+          const selected = index === active % steps.length;
+          const last = index === steps.length - 1;
+          return `<g>
+            <rect x="300" y="${y}" width="1320" height="104" rx="${last ? 12 : 52}" fill="${selected ? accent : "#202020"}" fill-opacity="${selected ? ".18" : "1"}" stroke="${selected ? accent : secondary}" stroke-width="${selected ? 6 : 2}"/>
+            <circle cx="372" cy="${y + 52}" r="27" fill="${selected ? accent : secondary}" fill-opacity="${selected ? .9 : .35}"/>
+            ${label(372, y + 62, last ? "∴" : String(index + 1), 25, "#050505")}
+            ${label(990, y + 62, step, 23, selected ? accent : "#ffffff")}
+          </g>${last ? "" : `<path d="M960 ${y + 104}v26" stroke="${accent}" stroke-width="5" marker-end="url(#showcase-arrow)"/>`}`;
+        })
+        .join("")}
+    </g>`;
+  }
+  if (template === "showcase-institutional-network") {
+    const nodes = academicDiagramLabels(section, 4, [
+      "FUNDERS",
+      "INSTITUTES",
+      "EXPERTS",
+      "POLICY",
+    ]);
+    const columns = [300, 760, 1220, 1660];
+    return `<g>
+      ${label(960, 330, "MONEY BUYS ATTENTION, AND ATTENTION SHAPES ADVICE", 24, accent)}
+      ${nodes
+        .map((node, index) => {
+          const x = columns[Math.min(index, columns.length - 1)];
+          const selected = index === active % nodes.length;
+          const next = columns[Math.min(index + 1, columns.length - 1)];
+          return `<g>
+            <rect x="${x - 150}" y="450" width="300" height="150" rx="18" fill="${selected ? accent : "#202020"}" fill-opacity="${selected ? ".18" : "1"}" stroke="${selected ? accent : secondary}" stroke-width="${selected ? 6 : 2}"/>
+            ${label(x, 532, node, 22, selected ? accent : "#ffffff")}
+          </g>${index < nodes.length - 1 ? `<path d="M${x + 150} 525h${Math.max(20, next - x - 300)}" stroke="${accent}" stroke-width="5" marker-end="url(#showcase-arrow)"/>` : ""}`;
+        })
+        .join("")}
+      ${label(960, 700, "CONFORM AND THE FUNDING CONTINUES; DEVIATE AND IT DOES NOT", 22, secondary)}
+    </g>`;
+  }
+  if (template === "showcase-case-contrast") {
+    const cases = academicDiagramLabels(section, 2, [
+      "KEPT THE PROGRAM",
+      "GAVE IT UP",
+    ]);
+    const outcomes = ["LEFT ALONE", "REGIME REMOVED"];
+    return `<g>
+      ${cases
+        .map((entry, index) => {
+          const x = 150 + index * 830;
+          const selected = index === active % 2;
+          return `<g>
+            <rect x="${x}" y="330" width="790" height="150" rx="18" fill="${selected ? accent : "#202020"}" fill-opacity="${selected ? ".18" : "1"}" stroke="${selected ? accent : secondary}" stroke-width="${selected ? 6 : 2}"/>
+            ${label(x + 395, 415, entry, 25, selected ? accent : "#ffffff")}
+            <path d="M${x + 395} 480v56" stroke="${accent}" stroke-width="5" marker-end="url(#showcase-arrow)"/>
+            <rect x="${x}" y="552" width="790" height="128" rx="18" fill="#151515" stroke="${secondary}" stroke-width="2" stroke-opacity=".6"/>
+            ${label(x + 395, 626, outcomes[index], 24, "#cfd2d3")}
+          </g>`;
+        })
+        .join("")}
+      ${label(960, 762, "A WATCHING STATE DRAWS ITS OWN LESSON", 23, accent)}
+    </g>`;
+  }
+  if (template === "showcase-time-horizon") {
+    const phases = academicDiagramLabels(section, 2, [
+      "HOLDS FOR NOW",
+      "THEN IT DOES NOT",
+    ]);
+    const early = active % 2 === 0;
+    return `<g>
+      <line x1="200" y1="800" x2="1760" y2="800" stroke="${secondary}" stroke-width="3" stroke-opacity=".5"/>
+      <path d="M200 560h760" stroke="${early ? accent : secondary}" stroke-width="${early ? 9 : 5}"/>
+      <path d="M960 560l430 -170" stroke="${early ? secondary : accent}" stroke-width="${early ? 5 : 9}" stroke-dasharray="16 10"/>
+      <path d="M960 560l430 190" stroke="${early ? secondary : accent}" stroke-width="${early ? 5 : 9}" stroke-dasharray="16 10"/>
+      <circle cx="960" cy="560" r="21" fill="${accent}"/>
+      ${label(570, 522, phases[0], 24, early ? accent : "#ffffff")}
+      ${label(960, 330, phases[1], 24, early ? "#ffffff" : accent)}
+      ${label(1560, 372, "CASCADE", 22, secondary)}
+      ${label(1560, 782, "COERCION", 22, secondary)}
+      ${label(560, 700, "THE BREAK POINT IS NOT SCHEDULED", 21, secondary)}
+    </g>`;
+  }
+  if (template === "showcase-policy-fork") {
+    const roads = academicDiagramLabels(section, 2, [
+      "ACCEPT THE SPREAD",
+      "AUTHORITY ABOVE STATES",
+    ]);
+    return `<g>
+      <rect x="610" y="300" width="700" height="130" rx="18" fill="#202020" stroke="${accent}" stroke-width="4"/>
+      ${label(960, 374, "IF IT CANNOT BE UNINVENTED", 23, accent)}
+      <path d="M810 430L500 596" stroke="${accent}" stroke-width="6" marker-end="url(#showcase-arrow)"/>
+      <path d="M1110 430L1420 596" stroke="${accent}" stroke-width="6" marker-end="url(#showcase-arrow)"/>
+      ${label(960, 540, "PICK ONE — THEY EXCLUDE EACH OTHER", 21, secondary)}
+      ${roads
+        .map((road, index) => {
+          const x = index === 0 ? 160 : 1000;
+          const selected = index === active % 2;
+          return `<g>
+            <rect x="${x}" y="620" width="760" height="170" rx="18" fill="${selected ? accent : "#202020"}" fill-opacity="${selected ? ".18" : "1"}" stroke="${selected ? accent : secondary}" stroke-width="${selected ? 6 : 2}"/>
+            ${label(x + 380, 718, road, 24, selected ? accent : "#ffffff")}
+          </g>`;
+        })
+        .join("")}
     </g>`;
   }
   return `<g>${box(350, 410, 360, 180, "CONCEPT", 0)}${box(780, 410, 360, 180, "EVIDENCE", 1)}${box(1210, 410, 360, 180, "APPLICATION", 2)}<path d="M710 500h50M1140 500h50" stroke="${accent}" stroke-width="6" marker-end="url(#showcase-arrow)"/></g>`;

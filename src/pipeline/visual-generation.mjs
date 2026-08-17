@@ -31,7 +31,7 @@ export async function generateVisualAssets({
   await mkdir(directory, { recursive: true });
   const manifestPath = join(directory, "visual-assets.json");
   const inputSignature = sha256({
-    cacheVersion: "rit-course-visuals/v7-mis-decision-scenes",
+    cacheVersion: "rit-course-visuals/v8-policy-families",
     preset: config.preset,
     episode,
     visualPlan,
