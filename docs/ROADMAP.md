@@ -16,8 +16,8 @@ zero terminal use and zero API keys.
 - [x] `desktop/` Electron shell that boots `studio/server.mjs` in a utility
       process and loads the existing Studio UI
 - [x] Bundled FFmpeg/FFprobe (per-platform static builds)
-- [ ] Pure-Node Edge TTS path (drop the `uvx` requirement); optional bundled
-      Piper voices for fully-offline narration
+- [x] Pure-Node Edge TTS path (`uvx` no longer required; kept as fallback)
+- [ ] Optional bundled Piper voices for fully-offline narration
 - [ ] First-run wizard: Free mode (no keys) vs. bring-your-own keys
       (stored with Electron `safeStorage`)
 - [ ] `rit-video doctor` surfaced as a setup checklist screen
