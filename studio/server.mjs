@@ -7,7 +7,7 @@ import {
 } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
-import { extname, join, resolve } from "node:path";
+import { basename, extname, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { fileURLToPath } from "node:url";
 import { atomicWriteJson } from "../src/core/canonical.mjs";
@@ -589,7 +589,7 @@ async function configurationSummary() {
     });
   }
   return {
-    configFile: path.split("/").at(-1),
+    configFile: basename(path),
     preset: config.preset,
     classification: config.dataPolicy.classification,
     ready: localPolicy.ok && checks.every((check) => check.ok),

@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, rename, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 export function canonicalize(value) {
   if (value === undefined) return null;
@@ -38,7 +38,7 @@ export async function atomicWrite(path, bytes, options = {}) {
   await mkdir(dirname(path), { recursive: true });
   const temporary = join(
     dirname(path),
-    `.${randomUUID()}.${path.split("/").at(-1)}.partial`,
+    `.${randomUUID()}.${basename(path)}.partial`,
   );
   try {
     await writeFile(temporary, bytes, options);
