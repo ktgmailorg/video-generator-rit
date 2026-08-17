@@ -9,23 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  # electron-builder can only upload into an existing DRAFT release, so the
-  # flow is: create one draft, let all OS jobs upload into it, then publish.
-  create-draft:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create a draft release if none exists for this tag
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          existing=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
-            --jq ".[] | select(.tag_name == \"$GITHUB_REF_NAME\") | .id" | head -1)
-          if [ -z "$existing" ]; then
-            gh api "repos/$GITHUB_REPOSITORY/releases" -f tag_name="$GITHUB_REF_NAME" \
-              -f name="$GITHUB_REF_NAME" -F draft=true -F generate_release_notes=true >/dev/null
-          fi
   desktop:
-    needs: create-draft
     strategy:
       fail-fast: false
       matrix:
@@ -44,23 +28,47 @@ jobs:
         if: runner.os == 'Linux'
         run: xvfb-run --auto-servernum npm run smoke
         working-directory: desktop
+        env:
+          # GitHub runners restrict unprivileged user namespaces, which breaks
+          # Electron's SUID sandbox helper. Safe to disable for our own smoke.
+          ELECTRON_DISABLE_SANDBOX: "1"
       - name: Build installers
-        run: npx electron-builder --publish always
+        run: npx electron-builder --publish never
         working-directory: desktop
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Unsigned builds until signing certificates are configured.
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Collect release files
+        shell: bash
+        run: |
+          mkdir -p upload
+          find desktop/dist -maxdepth 1 -type f \
+            \( -name '*.dmg' -o -name '*.zip' -o -name '*.exe' \
+               -o -name '*.AppImage' -o -name '*.deb' \
+               -o -name '*.blockmap' -o -name 'latest*.yml' \) \
+            -exec cp {} upload/ \;
+          ls -la upload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          path: upload/*
+          if-no-files-found: error
 
   publish-release:
     needs: desktop
     runs-on: ubuntu-latest
     steps:
-      - name: Publish the draft release
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+      - name: Create or update the release with all installers
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          release_id=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
-            --jq ".[] | select(.tag_name == \"$GITHUB_REF_NAME\") | .id" | head -1)
-          gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$release_id" \
-            -F draft=false >/dev/null
+          ls -la assets
+          if ! gh release view "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" \
+              --title "$GITHUB_REF_NAME" --generate-notes
+          fi
+          gh release upload "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" --clobber assets/*
