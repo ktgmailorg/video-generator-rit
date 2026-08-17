@@ -11,15 +11,19 @@ import {
   shell,
   utilityProcess,
 } from "electron";
-import { CREDENTIAL_PROVIDERS, applyCredentialProviders } from "./credential-providers.mjs";
 import {
-  configuredCredentials,
+  PROVIDER_CATALOG,
+  applyProviderSelections,
+} from "./credential-providers.mjs";
+import {
+  configuredProviders,
   credentialEnv,
-  deleteCredential,
+  discoverLocalProviders,
   encryptionAvailable,
+  forgetProvider,
   readSettings,
-  saveCredential,
-  verifyCredential,
+  saveProvider,
+  verifyProvider,
   writeSettings,
 } from "./credentials.mjs";
 
@@ -97,9 +101,9 @@ async function writeStudioConfig() {
     pathToFileURL(join(pipelineRoot, "src", "core", "canonical.mjs")).href
   );
   const configPath = join(dataRoot(), "video.config.json");
-  const config = applyCredentialProviders(
+  const config = applyProviderSelections(
     presetConfig("generic"),
-    await configuredCredentials(),
+    await configuredProviders(),
   );
   await atomicWriteJson(configPath, config);
   return configPath;
@@ -244,35 +248,41 @@ function createSetupWindow() {
 
 function registerSetupHandlers() {
   ipcMain.handle("setup:state", async () => ({
-    providers: CREDENTIAL_PROVIDERS.map((provider) => ({
+    // Only presentational fields cross the bridge; nothing secret.
+    providers: PROVIDER_CATALOG.map((provider) => ({
       id: provider.id,
+      kind: provider.kind,
       label: provider.label,
-      keyPrefix: provider.keyPrefix,
-      keyUrl: provider.keyUrl,
+      hint: provider.hint || null,
+      baseUrl: provider.baseUrl || null,
+      keyUrl: provider.keyUrl || null,
+      setupUrl: provider.setupUrl || null,
       authKinds: [...provider.authKinds],
     })),
-    configured: await configuredCredentials(),
+    configured: await configuredProviders(),
     encryptionAvailable: encryptionAvailable(),
     settings: await readSettings(),
   }));
 
-  ipcMain.handle("setup:verify", async (_event, { id, key }) => {
+  ipcMain.handle("setup:discover-local", async () => {
     try {
-      const { models } = await verifyCredential(id, key);
-      return { ok: true, models };
+      return await discoverLocalProviders();
+    } catch {
+      return [];
+    }
+  });
+
+  ipcMain.handle("setup:verify", async (_event, { id, key, baseUrl }) => {
+    try {
+      return { ok: true, ...(await verifyProvider({ id, key, baseUrl })) };
     } catch (error) {
       return { ok: false, error: error.message };
     }
   });
 
-  ipcMain.handle("setup:save", async (_event, { id, key, model }) => {
+  ipcMain.handle("setup:save", async (_event, { id, key, model, baseUrl }) => {
     try {
-      await saveCredential(id, key);
-      const settings = await readSettings();
-      await writeSettings({
-        mode: "byok",
-        models: { ...settings.models, [id]: model },
-      });
+      await saveProvider({ id, key, model, baseUrl });
       await restartStudio();
       return { ok: true };
     } catch (error) {
@@ -281,16 +291,13 @@ function registerSetupHandlers() {
   });
 
   ipcMain.handle("setup:forget", async (_event, { id }) => {
-    await deleteCredential(id);
-    const remaining = await configuredCredentials();
-    await writeSettings({ mode: remaining.length > 0 ? "byok" : "free" });
-    await restartStudio();
-    return { ok: true };
-  });
-
-  ipcMain.handle("setup:free-mode", async () => {
-    await writeSettings({ mode: "free" });
-    return { ok: true };
+    try {
+      await forgetProvider(id);
+      await restartStudio();
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
   });
 
   ipcMain.handle("setup:finish", async () => {
@@ -301,9 +308,14 @@ function registerSetupHandlers() {
   });
 
   ipcMain.handle("setup:open-external", async (_event, { url }) => {
-    // Only ever open the vendors' own documented key pages.
-    const allowed = CREDENTIAL_PROVIDERS.map((provider) => provider.keyUrl);
-    if (allowed.includes(url)) await shell.openExternal(url);
+    // Only ever open the documented key or install pages from the catalog,
+    // so a compromised renderer cannot use this as a generic URL opener.
+    const allowed = new Set(
+      PROVIDER_CATALOG.flatMap((provider) =>
+        [provider.keyUrl, provider.setupUrl].filter(Boolean),
+      ),
+    );
+    if (allowed.has(url)) await shell.openExternal(url);
     return { ok: true };
   });
 }

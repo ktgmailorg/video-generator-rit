@@ -8,145 +8,141 @@
     <style>
       :root {
         color-scheme: light dark;
-        --bg: #ffffff;
-        --fg: #14161a;
-        --muted: #5c6470;
-        --line: #dfe3e9;
-        --card: #f6f7f9;
-        --accent: #f76902;
-        --accent-fg: #ffffff;
-        --ok: #0f7b3f;
-        --err: #b3261e;
+        --bg: #ffffff; --fg: #14161a; --muted: #5c6470; --line: #dfe3e9;
+        --card: #f6f7f9; --accent: #f76902; --accent-fg: #ffffff;
+        --ok: #0f7b3f; --err: #b3261e; --local: #0b6fb8;
       }
       @media (prefers-color-scheme: dark) {
         :root {
-          --bg: #16181c;
-          --fg: #f2f3f5;
-          --muted: #a2abb8;
-          --line: #2c3038;
-          --card: #1e2126;
-          --ok: #4ac57e;
-          --err: #ff8a80;
+          --bg: #16181c; --fg: #f2f3f5; --muted: #a2abb8; --line: #2c3038;
+          --card: #1e2126; --ok: #4ac57e; --err: #ff8a80; --local: #6cb6ff;
         }
       }
       * { box-sizing: border-box; }
       /* `display: flex` below would otherwise defeat the hidden attribute. */
       [hidden] { display: none !important; }
       body {
-        margin: 0;
-        padding: 36px 40px 44px;
-        background: var(--bg);
-        color: var(--fg);
+        margin: 0; padding: 32px 36px 40px; background: var(--bg); color: var(--fg);
         font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
-      h1 { font-size: 25px; margin: 0 0 6px; letter-spacing: -0.01em; }
-      p.lede { margin: 0 0 26px; color: var(--muted); max-width: 62ch; }
-      fieldset { border: 0; margin: 0; padding: 0; }
-      .choices { display: grid; gap: 14px; }
+      h1 { font-size: 24px; margin: 0 0 6px; letter-spacing: -0.01em; }
+      p.lede { margin: 0 0 24px; color: var(--muted); max-width: 64ch; }
+      .choices { display: grid; gap: 12px; }
       .choice {
-        border: 1.5px solid var(--line);
-        border-radius: 12px;
-        padding: 16px 18px;
-        background: var(--card);
-        cursor: pointer;
-        display: block;
+        border: 1.5px solid var(--line); border-radius: 12px; padding: 15px 17px;
+        background: var(--card); cursor: pointer; display: block;
       }
       .choice:hover { border-color: var(--muted); }
       .choice:has(input:checked) { border-color: var(--accent); }
       .choice-head { display: flex; align-items: center; gap: 10px; font-weight: 640; }
-      .choice p { margin: 8px 0 0 26px; color: var(--muted); font-size: 14px; }
+      .choice p { margin: 7px 0 0 26px; color: var(--muted); font-size: 13.5px; }
       .badge {
-        margin-left: auto; font-size: 11.5px; font-weight: 700;
-        text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+        margin-left: auto; font-size: 11px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.06em; color: var(--muted);
       }
-      .keys { margin: 22px 0 0; display: none; }
-      .keys[data-visible="true"] { display: block; }
+      .badge.found { color: var(--ok); }
+      .panel { margin: 20px 0 0; }
+      .panel > h2 {
+        font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em;
+        color: var(--muted); margin: 22px 0 10px;
+      }
       .provider {
-        border-top: 1px solid var(--line);
-        padding: 18px 0 4px;
+        border: 1.5px solid var(--line); border-radius: 11px;
+        padding: 13px 15px; margin-bottom: 10px; background: var(--card);
       }
-      .provider h2 { font-size: 15px; margin: 0 0 4px; }
-      .provider .hint { color: var(--muted); font-size: 13.5px; margin: 0 0 10px; }
-      .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-      input[type="password"], input[type="text"], select {
-        flex: 1 1 260px; min-width: 0;
-        padding: 9px 11px; border-radius: 8px;
+      .provider-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+      .provider-head strong { font-size: 14.5px; }
+      .tag {
+        font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+        text-transform: uppercase; padding: 2px 7px; border-radius: 999px;
+        border: 1px solid var(--line); color: var(--muted);
+      }
+      .tag.local { color: var(--local); border-color: currentColor; }
+      .tag.running { color: var(--ok); border-color: currentColor; }
+      .provider .hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+      input, select {
+        flex: 1 1 240px; min-width: 0; padding: 8px 10px; border-radius: 8px;
         border: 1.5px solid var(--line); background: var(--bg); color: var(--fg);
-        font: inherit; font-size: 14px;
+        font: inherit; font-size: 13.5px;
       }
-      select { flex: 0 1 240px; }
       button {
-        font: inherit; font-size: 14px; font-weight: 600;
-        padding: 9px 15px; border-radius: 8px; cursor: pointer;
-        border: 1.5px solid var(--line); background: var(--bg); color: var(--fg);
+        font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px;
+        border-radius: 8px; cursor: pointer; border: 1.5px solid var(--line);
+        background: var(--bg); color: var(--fg); flex: 0 0 auto;
       }
       button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
       button:disabled { opacity: 0.55; cursor: progress; }
-      .status { font-size: 13.5px; margin: 9px 0 0; min-height: 1.2em; }
+      .status { font-size: 13px; margin: 8px 0 0; }
       .status.ok { color: var(--ok); }
       .status.err { color: var(--err); }
-      .saved { display: flex; align-items: center; gap: 10px; font-size: 14px; }
-      .saved code {
-        background: var(--card); padding: 2px 7px; border-radius: 6px;
-        border: 1px solid var(--line); font-size: 13px;
+      .saved { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 8px; font-size: 13.5px; }
+      code {
+        background: var(--bg); padding: 2px 6px; border-radius: 6px;
+        border: 1px solid var(--line); font-size: 12.5px;
       }
       footer {
-        margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--line);
+        margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line);
         display: flex; align-items: center; gap: 14px;
       }
-      footer .note { color: var(--muted); font-size: 13px; max-width: 52ch; }
+      footer .note { color: var(--muted); font-size: 13px; max-width: 50ch; }
       footer button { margin-left: auto; }
       a { color: var(--accent); }
       .warn {
-        margin: 0 0 20px; padding: 11px 14px; border-radius: 9px;
-        background: var(--card); border: 1px solid var(--line);
-        color: var(--muted); font-size: 13.5px; display: none;
+        margin: 0 0 18px; padding: 10px 13px; border-radius: 9px; background: var(--card);
+        border: 1px solid var(--line); color: var(--muted); font-size: 13px;
       }
-      .warn[data-visible="true"] { display: block; }
     </style>
   </head>
   <body>
     <h1>Welcome to RIT Video Studio</h1>
     <p class="lede">
-      Choose how the studio should generate text. You can change this later.
-      Visuals, captions, and rendering always run on this computer; the free
-      narration voice uses Microsoft's Edge text-to-speech service, so the
-      words you want spoken are sent there to be synthesized.
+      Pick how the studio should write drafts. Visuals, captions, and
+      rendering always run on this computer; the free narration voice uses
+      Microsoft's Edge text-to-speech service, so the words to be spoken are
+      sent there to be synthesized.
     </p>
 
-    <p class="warn" id="storage-warning"></p>
+    <p class="warn" id="storage-warning" hidden></p>
 
-    <fieldset>
-      <div class="choices">
-        <label class="choice">
-          <span class="choice-head">
-            <input type="radio" name="mode" value="free" checked>
-            Free mode
-            <span class="badge">No account</span>
-          </span>
-          <p>
-            Write or paste your own script. No API key, account, or sign-in.
-            Narration is synthesized by Microsoft Edge TTS; everything else is
-            produced on this computer. For narration that never leaves the
-            machine, configure a local Piper voice.
-          </p>
-        </label>
-        <label class="choice">
-          <span class="choice-head">
-            <input type="radio" name="mode" value="byok">
-            Add my own AI provider key
-            <span class="badge">Optional</span>
-          </span>
-          <p>
-            Adds the “generate a draft transcript with AI” option. Uses your
-            own Anthropic or OpenAI API key, billed to your account. Keys are
-            encrypted by your operating system and never leave this computer.
-          </p>
-        </label>
-      </div>
-    </fieldset>
+    <div class="choices">
+      <label class="choice">
+        <span class="choice-head">
+          <input type="radio" name="mode" value="free" checked>
+          Just my own script
+          <span class="badge">No setup</span>
+        </span>
+        <p>
+          Paste a script you already have. Nothing else to configure — no
+          account, no key, no model to install.
+        </p>
+      </label>
+      <label class="choice">
+        <span class="choice-head">
+          <input type="radio" name="mode" value="local">
+          A model on this computer
+          <span class="badge" id="local-badge">Private</span>
+        </span>
+        <p>
+          Use Ollama, LM Studio, or llama.cpp to draft transcripts. Nothing is
+          sent to any company and there is nothing to pay.
+        </p>
+      </label>
+      <label class="choice">
+        <span class="choice-head">
+          <input type="radio" name="mode" value="cloud">
+          An AI provider I have a key for
+          <span class="badge">Your account</span>
+        </span>
+        <p>
+          Anthropic, OpenAI, Gemini, Groq, Mistral, DeepSeek, OpenRouter,
+          Together — or any custom OpenAI-compatible endpoint. Usage is billed
+          to your own account.
+        </p>
+      </label>
+    </div>
 
-    <div class="keys" id="keys"></div>
+    <div class="panel" id="panel"></div>
 
     <footer>
       <span class="note" id="footer-note"></span>
@@ -155,9 +151,9 @@
 
     <script>
       const api = window.studioSetup;
-      const keysEl = document.getElementById("keys");
-      const warnEl = document.getElementById("storage-warning");
+      const panel = document.getElementById("panel");
       const noteEl = document.getElementById("footer-note");
+      const warnEl = document.getElementById("storage-warning");
       let state = null;
 
       const escape = (value) =>
@@ -165,63 +161,101 @@
           "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
         })[character]);
 
-      function providerMarkup(provider, configured) {
-        const saved = configured.find((entry) => entry.id === provider.id);
-        if (saved) {
-          return `
-            <div class="provider" data-provider="${escape(provider.id)}">
-              <h2>${escape(provider.label)}</h2>
-              <div class="saved">
-                <span>Key saved <code>${escape(saved.hint)}</code></span>
-                <span>·</span>
-                <span>Model <code>${escape(saved.model || "not set")}</code></span>
-                <button data-action="forget">Remove</button>
-              </div>
-              <p class="status" data-role="status"></p>
-            </div>`;
-        }
+      const providersOfKind = (kind) =>
+        state.providers.filter((provider) => provider.kind === kind);
+      const savedFor = (id) =>
+        state.configured.find((entry) => entry.id === id);
+      const discovered = (id) =>
+        (state.discovered || []).find((entry) => entry.id === id);
+
+      function savedMarkup(saved) {
+        return `
+          <div class="saved">
+            <span>Model <code>${escape(saved.model)}</code></span>
+            ${saved.hint ? `<span>· key <code>${escape(saved.hint)}</code></span>` : ""}
+            <span class="tag ${saved.executionLocation === "local" ? "local" : ""}">${escape(saved.executionLocation)}</span>
+            <button data-action="forget">Remove</button>
+          </div>`;
+      }
+
+      function providerCard(provider) {
+        const saved = savedFor(provider.id);
+        const found = discovered(provider.id);
+        const needsUrl = provider.kind === "custom";
+        const takesKey = provider.kind === "cloud" || provider.kind === "custom";
+        const tags = [
+          provider.kind === "local" ? '<span class="tag local">on this computer</span>' : "",
+          found?.running ? '<span class="tag running">running</span>' : "",
+        ].join("");
         return `
           <div class="provider" data-provider="${escape(provider.id)}">
-            <h2>${escape(provider.label)}</h2>
-            <p class="hint">
-              Paste a key that starts with <code>${escape(provider.keyPrefix)}</code>.
-              <a href="#" data-action="open-key-page">Get a key ↗</a>
-            </p>
-            <div class="row">
-              <input type="password" data-role="key" placeholder="${escape(provider.keyPrefix)}…"
-                autocomplete="off" spellcheck="false">
-              <button data-action="verify">Check key</button>
+            <div class="provider-head">
+              <strong>${escape(provider.label)}</strong>${tags}
             </div>
-            <div class="row" data-role="model-row" hidden>
-              <select data-role="model"></select>
-              <button class="primary" data-action="save">Save</button>
-            </div>
+            ${provider.hint ? `<p class="hint">${escape(provider.hint)}</p>` : ""}
+            ${saved ? savedMarkup(saved) : `
+              ${needsUrl ? `
+              <div class="row">
+                <input type="text" data-role="baseUrl" placeholder="https://your-server.example/v1"
+                  value="${escape(provider.baseUrl || "")}" spellcheck="false">
+              </div>` : ""}
+              <div class="row">
+                ${takesKey ? `<input type="password" data-role="key" autocomplete="off" spellcheck="false"
+                  placeholder="${provider.kind === "custom" ? "API key (leave empty if none)" : "Paste your API key"}">` : ""}
+                <button data-action="check">${provider.kind === "local" ? "Find models" : "Check"}</button>
+                ${provider.keyUrl ? `<a href="#" data-action="open-key">Get a key ↗</a>` : ""}
+                ${provider.setupUrl ? `<a href="#" data-action="open-setup">Install ↗</a>` : ""}
+              </div>
+              <div class="row" data-role="model-row" hidden>
+                <select data-role="model"></select>
+                <button class="primary" data-action="save">Use this</button>
+              </div>`}
             <p class="status" data-role="status"></p>
           </div>`;
       }
 
       function render() {
-        keysEl.innerHTML = state.providers
-          .map((provider) => providerMarkup(provider, state.configured))
-          .join("");
-        const configuredCount = state.configured.length;
-        noteEl.textContent = configuredCount
-          ? `${configuredCount} provider${configuredCount > 1 ? "s" : ""} connected. Free narration and rendering stay enabled.`
-          : "Free mode needs no further setup.";
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        if (mode === "free") {
+          panel.innerHTML = "";
+        } else if (mode === "local") {
+          panel.innerHTML =
+            `<h2>Model servers on this computer</h2>` +
+            providersOfKind("local").map(providerCard).join("");
+        } else {
+          panel.innerHTML =
+            `<h2>Providers</h2>` +
+            providersOfKind("cloud").map(providerCard).join("") +
+            `<h2>Custom endpoint</h2>` +
+            providersOfKind("custom").map(providerCard).join("");
+        }
+        const count = state.configured.length;
+        noteEl.textContent = count
+          ? `${count} model source${count > 1 ? "s" : ""} ready. Narration and rendering stay free.`
+          : "You can add or change a model source later from this screen.";
+        const running = (state.discovered || []).filter((entry) => entry.running);
+        const badge = document.getElementById("local-badge");
+        if (running.length > 0) {
+          badge.textContent = `${running.length} found`;
+          badge.classList.add("found");
+        }
         if (!state.encryptionAvailable) {
-          warnEl.dataset.visible = "true";
+          warnEl.hidden = false;
           warnEl.textContent =
-            "This system has no available keyring, so a key you add will be kept in memory for this session only and will need re-entering next launch. Free mode is unaffected.";
+            "This system has no available keyring, so an API key will be kept in memory for this session only and will need re-entering next launch. Local models and free mode are unaffected.";
         }
       }
 
-      function setStatus(element, message, kind) {
-        const status = element.querySelector('[data-role="status"]');
+      function setStatus(card, message, kind) {
+        const status = card.querySelector('[data-role="status"]');
         status.textContent = message;
         status.className = `status ${kind || ""}`;
       }
 
-      keysEl.addEventListener("click", async (event) => {
+      const readField = (card, role) =>
+        card.querySelector(`[data-role="${role}"]`)?.value?.trim() || "";
+
+      panel.addEventListener("click", async (event) => {
         const button = event.target.closest("[data-action]");
         if (!button) return;
         event.preventDefault();
@@ -230,21 +264,26 @@
         const provider = state.providers.find((entry) => entry.id === id);
         const action = button.dataset.action;
 
-        if (action === "open-key-page") {
-          await api.openExternal(provider.keyUrl);
+        if (action === "open-key" || action === "open-setup") {
+          await api.openExternal(
+            action === "open-key" ? provider.keyUrl : provider.setupUrl,
+          );
           return;
         }
         if (action === "forget") {
-          await api.forgetKey(id);
+          await api.forgetProvider(id);
           state = await api.getState();
           render();
           return;
         }
-        if (action === "verify") {
-          const key = card.querySelector('[data-role="key"]').value;
+        if (action === "check") {
           button.disabled = true;
-          setStatus(card, "Checking with the provider…");
-          const result = await api.verifyKey(id, key);
+          setStatus(card, "Checking…");
+          const result = await api.verifyProvider({
+            id,
+            key: readField(card, "key"),
+            baseUrl: readField(card, "baseUrl"),
+          });
           button.disabled = false;
           if (!result.ok) {
             setStatus(card, result.error, "err");
@@ -255,15 +294,22 @@
             .map((model) => `<option value="${escape(model)}">${escape(model)}</option>`)
             .join("");
           card.querySelector('[data-role="model-row"]').hidden = false;
-          setStatus(card, "Key works. Choose the model to plan with.", "ok");
+          setStatus(
+            card,
+            `Found ${result.models.length} model${result.models.length > 1 ? "s" : ""} · runs ${result.executionLocation === "local" ? "on this computer" : "on the provider's servers"}. Choose one.`,
+            "ok",
+          );
           return;
         }
         if (action === "save") {
-          const key = card.querySelector('[data-role="key"]').value;
-          const model = card.querySelector('[data-role="model"]').value;
           button.disabled = true;
           setStatus(card, "Saving…");
-          const result = await api.saveKey(id, key, model);
+          const result = await api.saveProvider({
+            id,
+            key: readField(card, "key"),
+            baseUrl: readField(card, "baseUrl"),
+            model: card.querySelector('[data-role="model"]').value,
+          });
           button.disabled = false;
           if (!result.ok) {
             setStatus(card, result.error, "err");
@@ -275,24 +321,24 @@
       });
 
       document.querySelectorAll('input[name="mode"]').forEach((input) => {
-        input.addEventListener("change", () => {
-          keysEl.dataset.visible = String(input.value === "byok" && input.checked);
-        });
+        input.addEventListener("change", render);
       });
 
       document.getElementById("continue").addEventListener("click", async (event) => {
         event.target.disabled = true;
-        const mode = document.querySelector('input[name="mode"]:checked').value;
-        if (mode === "free") await api.useFreeMode();
         await api.finish();
       });
 
       (async () => {
         state = await api.getState();
         if (state.configured.length > 0) {
-          document.querySelector('input[value="byok"]').checked = true;
-          keysEl.dataset.visible = "true";
+          const kind = state.configured[0].kind === "local" ? "local" : "cloud";
+          document.querySelector(`input[value="${kind}"]`).checked = true;
         }
+        render();
+        // Probing the local servers is slower than first paint, so fold the
+        // result in when it arrives.
+        state.discovered = await api.discoverLocal();
         render();
       })();
     </script>

@@ -30,9 +30,12 @@ deterministic educational diagrams — no API keys, no model downloads. Note
 that Edge TTS is Microsoft's hosted service, so narration text is sent there
 to be synthesized; visuals, captions, and rendering stay on your machine, and
 a local Piper voice keeps narration on-machine too.
-**Bring your own models:** Anthropic, OpenAI, any OpenAI-compatible server,
-Ollama, ComfyUI, Piper, and whisper.cpp are supported through explicit
-provider profiles.
+**Bring your own models:** the desktop app can plan with a model running on
+your own machine (Ollama, LM Studio, llama.cpp — auto-detected, no key, no
+data leaves), with a cloud provider you hold a key for (Anthropic, OpenAI,
+Google Gemini, Groq, Mistral, DeepSeek, OpenRouter, Together), or with any
+custom OpenAI-compatible endpoint. The CLI additionally routes ComfyUI,
+Piper, and whisper.cpp through explicit provider profiles.
 
 Overview and captioned demo:
 [ktgmailorg.github.io/one-click-ai-video-pilot](https://ktgmailorg.github.io/one-click-ai-video-pilot/).

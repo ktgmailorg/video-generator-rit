@@ -4,24 +4,32 @@ import { presetConfig } from "../src/config.mjs";
 import { assertSchema } from "../src/core/schema.mjs";
 import { inspectFullyLocalStudioConfig } from "../studio/local-policy.mjs";
 import {
-  applyCredentialProviders,
+  applyProviderSelections,
   assertApiKeyShape,
-  CREDENTIAL_PROVIDERS,
-  credentialProvider,
+  assertEndpointUrl,
+  executionLocationFor,
   filterPlannerModels,
+  isLoopbackUrl,
   maskKey,
+  PROVIDER_CATALOG,
+  providerById,
+  requiresApiKey,
 } from "../desktop/credential-providers.mjs";
 
-test("api key shapes are validated per provider", () => {
+test("api key shapes are validated only where a prefix is documented", () => {
   assert.equal(
     assertApiKeyShape("anthropic", "  sk-ant-api03-abc  "),
     "sk-ant-api03-abc",
   );
-  assert.equal(assertApiKeyShape("openai", "sk-proj-abc"), "sk-proj-abc");
   assert.throws(() => assertApiKeyShape("anthropic", "sk-proj-abc"), /sk-ant-/);
   assert.throws(() => assertApiKeyShape("openai", ""), /Enter an API key/);
   assert.throws(() => assertApiKeyShape("openai", "sk-a b"), /spaces/);
-  assert.throws(() => credentialProvider("gemini"), /Unknown credential/);
+  // Vendors without a stable documented prefix must accept their real keys
+  // rather than be rejected by a guess.
+  assert.equal(assertApiKeyShape("groq", "gsk_abc123"), "gsk_abc123");
+  assert.equal(assertApiKeyShape("openrouter", "sk-or-v1-abc"), "sk-or-v1-abc");
+  assert.equal(assertApiKeyShape("gemini", "AIzaSyAbc123"), "AIzaSyAbc123");
+  assert.throws(() => providerById("nope"), /Unknown provider/);
 });
 
 test("masking never reveals the middle of a key", () => {
@@ -31,65 +39,128 @@ test("masking never reveals the middle of a key", () => {
   assert.equal(maskKey("short"), "•••••");
 });
 
-test("every provider declares an api-key auth kind", () => {
-  for (const provider of CREDENTIAL_PROVIDERS) {
-    assert.ok(provider.authKinds.includes("apiKey"), provider.id);
-    assert.match(provider.apiKeyEnv, /^[A-Z_]+$/);
+test("the catalog covers local, cloud, and custom options coherently", () => {
+  const kinds = new Set(PROVIDER_CATALOG.map((provider) => provider.kind));
+  assert.deepEqual([...kinds].sort(), ["cloud", "custom", "local"]);
+  for (const provider of PROVIDER_CATALOG) {
+    assert.ok(provider.label && provider.adapter, provider.id);
+    assert.ok(provider.roles.includes("planner"), provider.id);
+    if (provider.kind === "local") {
+      assert.ok(isLoopbackUrl(provider.baseUrl), provider.id);
+      assert.equal(requiresApiKey(provider), false, provider.id);
+    }
+    if (provider.kind === "cloud") {
+      assert.match(provider.apiKeyEnv, /^[A-Z_]+$/, provider.id);
+      assert.ok(provider.keyUrl, provider.id);
+      // Either a native adapter with its own endpoint, or a base URL.
+      assert.ok(provider.baseUrl || provider.modelsUrl, provider.id);
+    }
   }
 });
 
+test("endpoint URLs are validated and normalized", () => {
+  assert.equal(
+    assertEndpointUrl("  http://127.0.0.1:1234/v1/  "),
+    "http://127.0.0.1:1234/v1",
+  );
+  assert.throws(() => assertEndpointUrl(""), /Enter the server address/);
+  assert.throws(() => assertEndpointUrl("not a url"), /not a valid URL/);
+  assert.throws(() => assertEndpointUrl("ftp://host/v1"), /http/);
+});
+
+test("execution location is derived from the endpoint, not claimed", () => {
+  assert.equal(executionLocationFor(providerById("ollama")), "local");
+  assert.equal(executionLocationFor(providerById("openai")), "hosted");
+  // A custom endpoint is local only when it really is loopback.
+  const custom = providerById("custom");
+  assert.equal(executionLocationFor(custom, "http://localhost:9000/v1"), "local");
+  assert.equal(executionLocationFor(custom, "https://models.example.edu/v1"), "hosted");
+});
+
 test("free mode adds no planner but allowlists Edge TTS narration", async () => {
-  const config = applyCredentialProviders(presetConfig("generic"), []);
-  // No key means no hosted planner and no AI transcript drafting.
+  const config = applyProviderSelections(presetConfig("generic"), []);
   assert.equal(config.roles.planner, undefined);
   assert.deepEqual(Object.keys(config.providers), ["edge"]);
   // Edge TTS is Microsoft-hosted, so it must be declared to pass the studio
   // gate; claiming free mode is fully local would be inaccurate.
   assert.equal(config.dataPolicy.hostedConsent, true);
   assert.deepEqual(config.dataPolicy.allowedHostedProviders, ["edge"]);
-  assert.equal(config.dataPolicy.classification, "public");
   await assertSchema("config", config);
 });
 
-test("a configured provider adds a hosted planner and keeps Edge narration", async () => {
-  const config = applyCredentialProviders(presetConfig("generic"), [
-    { id: "anthropic", model: "claude-sonnet-5" },
+test("a local model server produces a local profile and needs no key", async () => {
+  const config = applyProviderSelections(presetConfig("generic"), [
+    { id: "ollama", model: "qwen3.8-27b" },
   ]);
-  assert.deepEqual(config.providers["anthropic-planning"], {
-    adapter: "anthropic",
+  const profile = config.providers["ollama-planning"];
+  assert.equal(profile.adapter, "ollama");
+  assert.equal(profile.executionLocation, "local");
+  assert.equal(profile.apiKeyEnv, undefined);
+  assert.equal(profile.baseUrl, "http://127.0.0.1:11434/v1");
+  assert.equal(config.roles.planner.primary, "ollama-planning");
+  // Only Edge TTS remains hosted, so the local planner is not allowlisted.
+  assert.deepEqual(config.dataPolicy.allowedHostedProviders, ["edge"]);
+  await assertSchema("config", config);
+});
+
+test("a cloud provider records its key variable, endpoint, and model", async () => {
+  const config = applyProviderSelections(presetConfig("generic"), [
+    { id: "groq", model: "llama-3.3-70b" },
+  ]);
+  assert.deepEqual(config.providers["groq-planning"], {
+    adapter: "openai-compatible",
     executionLocation: "hosted",
-    apiKeyEnv: "ANTHROPIC_API_KEY",
-    model: "claude-sonnet-5",
-    capabilities: ["text.generate", "research.search"],
+    model: "llama-3.3-70b",
+    capabilities: ["text.generate"],
+    baseUrl: "https://api.groq.com/openai/v1",
+    apiKeyEnv: "GROQ_API_KEY",
   });
-  assert.equal(config.roles.planner.primary, "anthropic-planning");
-  assert.equal(config.roles.research.primary, "anthropic-planning");
-  // Narration must stay on the free Edge TTS profile.
-  assert.equal(config.roles.narration.primary, "edge");
-  assert.equal(config.dataPolicy.hostedConsent, true);
-  // Every hosted profile, Edge TTS included, has to be allow-listed.
   assert.deepEqual(
     [...config.dataPolicy.allowedHostedProviders].sort(),
-    ["anthropic-planning", "edge"],
+    ["edge", "groq-planning"],
   );
   await assertSchema("config", config);
 });
 
-test("the first configured provider wins contested roles", async () => {
-  const config = applyCredentialProviders(presetConfig("generic"), [
-    { id: "openai", model: "gpt-4.1" },
+test("a custom endpoint is honored, with a key only when one was stored", async () => {
+  const withKey = applyProviderSelections(presetConfig("generic"), [
+    { id: "custom", model: "my-model", baseUrl: "https://ai.example.edu/v1", hasKey: true },
+  ]);
+  assert.equal(withKey.providers["custom-planning"].apiKeyEnv, "CUSTOM_API_KEY");
+  assert.equal(withKey.providers["custom-planning"].executionLocation, "hosted");
+
+  const keyless = applyProviderSelections(presetConfig("generic"), [
+    { id: "custom", model: "my-model", baseUrl: "http://127.0.0.1:9000/v1" },
+  ]);
+  assert.equal(keyless.providers["custom-planning"].apiKeyEnv, undefined);
+  assert.equal(keyless.providers["custom-planning"].executionLocation, "local");
+  await assertSchema("config", keyless);
+});
+
+test("anthropic claims research as well as planning; others only plan", async () => {
+  const config = applyProviderSelections(presetConfig("generic"), [
     { id: "anthropic", model: "claude-sonnet-5" },
   ]);
-  assert.equal(config.roles.planner.primary, "openai-planning");
-  // Anthropic still serves the role OpenAI did not claim.
+  assert.equal(config.roles.planner.primary, "anthropic-planning");
   assert.equal(config.roles.research.primary, "anthropic-planning");
-  assert.ok(config.providers["openai-planning"]);
-  assert.ok(config.providers["anthropic-planning"]);
-  await assertSchema("config", config);
+  const groq = applyProviderSelections(presetConfig("generic"), [
+    { id: "groq", model: "llama-3.3-70b" },
+  ]);
+  assert.equal(groq.roles.research, undefined);
+});
+
+test("the first configured provider wins contested roles", () => {
+  const config = applyProviderSelections(presetConfig("generic"), [
+    { id: "ollama", model: "local-model" },
+    { id: "anthropic", model: "claude-sonnet-5" },
+  ]);
+  assert.equal(config.roles.planner.primary, "ollama-planning");
+  // Anthropic still serves the role the local model did not claim.
+  assert.equal(config.roles.research.primary, "anthropic-planning");
 });
 
 test("incomplete selections are ignored rather than written as partial profiles", () => {
-  const config = applyCredentialProviders(presetConfig("generic"), [
+  const config = applyProviderSelections(presetConfig("generic"), [
     { id: "anthropic" },
     { model: "gpt-4.1" },
   ]);
@@ -97,35 +168,46 @@ test("incomplete selections are ignored rather than written as partial profiles"
   assert.deepEqual(config.dataPolicy.allowedHostedProviders, ["edge"]);
 });
 
-test("every config the desktop app generates passes the studio gate", () => {
-  for (const selections of [
+test("every combination the app can generate passes the studio gate", async () => {
+  const options = [
     [],
+    [{ id: "ollama", model: "local-model" }],
+    [{ id: "lmstudio", model: "local-model" }],
     [{ id: "anthropic", model: "claude-sonnet-5" }],
     [{ id: "openai", model: "gpt-4.1" }],
+    [{ id: "gemini", model: "gemini-2.5-pro" }],
+    [{ id: "openrouter", model: "vendor/model" }],
+    [{ id: "custom", model: "m", baseUrl: "https://ai.example.edu/v1", hasKey: true }],
+    [{ id: "custom", model: "m", baseUrl: "http://127.0.0.1:9000/v1" }],
     [
+      { id: "ollama", model: "local-model" },
       { id: "anthropic", model: "claude-sonnet-5" },
-      { id: "openai", model: "gpt-4.1" },
     ],
-  ]) {
-    const config = applyCredentialProviders(presetConfig("generic"), selections);
+  ];
+  for (const selections of options) {
+    const config = applyProviderSelections(presetConfig("generic"), selections);
+    await assertSchema("config", config);
     const inspection = inspectFullyLocalStudioConfig(config);
     assert.equal(
       inspection.ok,
       true,
-      `${selections.length} provider(s): ${inspection.errors.join("; ")}`,
+      `${JSON.stringify(selections)}: ${inspection.errors.join("; ")}`,
     );
-    assert.equal(inspection.mode, "public");
   }
 });
 
-test("planner model lists keep text models and stay stable", () => {
+test("planner model lists drop non-text models and stay stable", () => {
   assert.deepEqual(
     filterPlannerModels("openai", ["dall-e-3", "gpt-4.1", "o4-mini", "gpt-4.1"]),
     ["gpt-4.1", "o4-mini"],
   );
   assert.deepEqual(
-    filterPlannerModels("anthropic", ["claude-opus-5", "claude-sonnet-5"]),
-    ["claude-opus-5", "claude-sonnet-5"],
+    filterPlannerModels("ollama", [
+      "qwen3:8b",
+      "nomic-embed-text:latest",
+      "llama3.2:3b",
+    ]),
+    ["llama3.2:3b", "qwen3:8b"],
   );
   // With nothing recognizable, show everything rather than an empty picker.
   assert.deepEqual(filterPlannerModels("openai", ["custom-model"]), [

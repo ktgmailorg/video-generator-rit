@@ -25,3 +25,4 @@ video.config.local.json
 tmp/pdfs/
 courses/rit-cs-catalog/catalog-progress.json
 courses/rit-cs-catalog/generation-summary.json
+verification-output/

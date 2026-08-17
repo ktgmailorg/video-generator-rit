@@ -18,10 +18,12 @@ zero terminal use and zero API keys.
 - [x] Bundled FFmpeg/FFprobe (per-platform static builds)
 - [x] Pure-Node Edge TTS path (`uvx` no longer required; kept as fallback)
 - [ ] Optional bundled Piper voices for fully-offline narration
-- [x] First-run setup screen: Free mode (no keys) vs. bring-your-own keys,
-      encrypted with Electron `safeStorage`, key verified against the
-      provider before saving and the planner model chosen from the account's
-      own model list
+- [x] First-run setup screen with three paths — script-only (no setup), a
+      local model server (Ollama / LM Studio / llama.cpp, auto-detected), or
+      any of eight cloud providers and custom OpenAI-compatible endpoints.
+      Keys are encrypted with Electron `safeStorage`, every provider is
+      contacted before it is saved, and the planner model is chosen from the
+      models that endpoint actually serves
 - [ ] `rit-video doctor` surfaced as a setup checklist screen
 - [x] Installers: macOS dmg, Windows NSIS, Linux AppImage/deb via
       electron-builder + GitHub Actions release workflow
