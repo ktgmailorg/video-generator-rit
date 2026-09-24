@@ -1,10 +1,10 @@
 import { mkdir, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { atomicWriteJson } from "../core/canonical.mjs";
+import { atomicWrite, atomicWriteJson } from "../core/canonical.mjs";
 import { verifyApproval } from "../core/approvals.mjs";
 import { loadBrandPack } from "../course/brand-pack.mjs";
 import { buildAiDisclosure } from "../course/disclosure.mjs";
-import { packageForPanopto } from "../course/package.mjs";
+import { audioDescriptionScript, packageForPanopto } from "../course/package.mjs";
 import { auditCourseEpisode } from "../course/quality.mjs";
 import { releaseApprovalSubject } from "../course/subjects.mjs";
 import { ProviderExecutionEngine } from "../providers/execution-engine.mjs";
@@ -268,6 +268,7 @@ export async function produceEpisode({
   releaseAudit.blockers.push(...narration.captions.audit.blockers);
   releaseAudit.warnings.push(...narration.captions.audit.warnings);
   releaseAudit.ok = releaseAudit.blockers.length === 0;
+  const reviewAudioDescription = audioDescriptionScript(plan.episode);
   const releaseSubject = releaseApprovalSubject({
     episode: plan.episode,
     master: {
@@ -285,8 +286,12 @@ export async function produceEpisode({
     },
     qualityReport: releaseAudit,
     disclosure,
+    audioDescription: reviewAudioDescription,
   });
   await Promise.all([
+    // The instructor reviews accessibility before approving release, so the
+    // description script has to exist in the draft, not only after packaging.
+    atomicWrite(join(root, "review", "audio-description.md"), reviewAudioDescription),
     atomicWriteJson(
       join(root, "review", "release.subject.json"),
       releaseSubject,

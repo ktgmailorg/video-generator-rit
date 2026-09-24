@@ -55,13 +55,7 @@ export async function packageForPanopto({
     });
     cursor += beat.duration;
   }
-  const audioDescription = episode.beats
-    .filter((beat) => beat.accessibility.audioDescriptionCue)
-    .map(
-      (beat) =>
-        `## ${beat.title}\n\n${beat.accessibility.audioDescriptionCue}\n`,
-    )
-    .join("\n");
+  const audioDescription = audioDescriptionScript(episode);
   const credits = {
     schemaVersion: 1,
     brandPack: brandPack
@@ -132,7 +126,7 @@ export async function packageForPanopto({
     atomicWriteJson(join(directory, "quality-report.json"), qualityReport),
     atomicWrite(
       join(directory, "audio-description-script.md"),
-      audioDescription || "# Audio Description\n\nNo separate cues were required.\n",
+      audioDescription,
     ),
   ]);
   if (config.preset === "rit-student") {
@@ -248,4 +242,18 @@ async function createReplayBundle({
     ),
   ]);
   return directory;
+}
+
+/**
+ * The audio-description script: one section per beat whose visuals carry
+ * information the narration does not say. Built here so the draft review copy
+ * and the released package are byte-identical.
+ */
+export function audioDescriptionScript(episode) {
+  const sections = episode.beats
+    .filter((beat) => beat.accessibility?.audioDescriptionCue)
+    .map((beat) => `## ${beat.title}\n\n${beat.accessibility.audioDescriptionCue}\n`);
+  return sections.length
+    ? `# Audio Description\n\n${sections.join("\n")}`
+    : "# Audio Description\n\nNo separate cues were required.\n";
 }

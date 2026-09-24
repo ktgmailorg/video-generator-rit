@@ -43,6 +43,7 @@ export function releaseApprovalSubject({
   transcript,
   qualityReport,
   disclosure,
+  audioDescription = null,
 }) {
   return {
     schemaVersion: 1,
@@ -51,6 +52,11 @@ export function releaseApprovalSubject({
     captions,
     transcript,
     qualityReport,
+    // Accessibility review covers the description track, so approving a
+    // release must bind it; editing a cue afterwards invalidates approval.
+    ...(audioDescription === null
+      ? {}
+      : { audioDescriptionSha256: sha256(audioDescription) }),
     disclosureSha256: sha256({
       schemaVersion: disclosure.schemaVersion,
       project: disclosure.project,

@@ -1483,3 +1483,30 @@ test("retiming rewrites only beat timecodes from measured durations", async () =
   assert.match(after, /Body mentions 0:00 - 0:30 in prose/);
   assert.throws(() => retimeStoryboard(before, [10, 20]), /3 beats but 2/);
 });
+
+test("release approval binds the audio-description script when one exists", async () => {
+  const { audioDescriptionScript } = await import("../src/course/package.mjs");
+  const episode = {
+    beats: [
+      { title: "Plain", accessibility: { audioDescriptionCue: null } },
+      { title: "Diagram", accessibility: { audioDescriptionCue: "Three boxes; the last is dashed." } },
+    ],
+  };
+  const script = audioDescriptionScript(episode);
+  assert.match(script, /^# Audio Description\n\n## Diagram\n\nThree boxes; the last is dashed\.\n$/);
+  assert.equal(
+    audioDescriptionScript({ beats: [episode.beats[0]] }),
+    "# Audio Description\n\nNo separate cues were required.\n",
+  );
+  const disclosure = {
+    schemaVersion: 1, project: {}, episode: {}, humanResponsibility: [], generatedStages: [],
+  };
+  const base = { episode: {}, master: {}, captions: {}, transcript: {}, qualityReport: { ok: true }, disclosure };
+  const withCue = releaseApprovalSubject({ ...base, audioDescription: script });
+  const edited = releaseApprovalSubject({ ...base, audioDescription: script.replace("dashed", "solid") });
+  assert.ok(withCue.audioDescriptionSha256);
+  // Editing a description after review must change what approval is bound to.
+  assert.notEqual(withCue.audioDescriptionSha256, edited.audioDescriptionSha256);
+  // Callers that pass no script keep the previous subject shape.
+  assert.equal("audioDescriptionSha256" in releaseApprovalSubject(base), false);
+});
