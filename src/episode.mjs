@@ -45,7 +45,7 @@ export async function episodeFromStoryboard(path, sourceEntries = []) {
       assetRequests: [],
       accessibility: {
         describedInNarration: true,
-        audioDescriptionCue: null,
+        audioDescriptionCue: section.audioDescriptionCue || null,
       },
     };
   });

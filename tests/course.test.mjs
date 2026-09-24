@@ -34,6 +34,7 @@ import { categoryForCatalogCourse } from "../src/course/catalog-category.mjs";
 import {
   courseShotSvg,
   courseThumbnailSvg,
+  RENDERABLE_SHOWCASE_TEMPLATES,
   resolveCourseVisualTemplate,
 } from "../src/visuals.mjs";
 import {
@@ -1389,4 +1390,96 @@ test("policy lesson directions never fall through to a generic course card", () 
       `${title} would render a generic course card`,
     );
   }
+});
+
+test("a declared template with no real body cannot slip past the visuals gate", () => {
+  // A typo, or a broad id with no body of its own, used to be returned as-is,
+  // render the generic fallback, and still count as subject-matched.
+  for (const id of ["showcase-typo", "showcase-systems"]) {
+    assert.equal(
+      resolveCourseVisualTemplate({ title: "Vague", visualDirection: `template:${id} | Make this engaging.` }),
+      null,
+      id,
+    );
+  }
+  // An unknown id still yields to real inference when the prose matches.
+  assert.equal(
+    resolveCourseVisualTemplate({ title: "Dates", visualDirection: "template:showcase-typo | A timeline of milestones." }),
+    "showcase-timeline",
+  );
+});
+
+test("every registered showcase template renders its own body", () => {
+  for (const id of RENDERABLE_SHOWCASE_TEMPLATES) {
+    const svg = courseShotSvg(
+      { title: "Registry check", visualDirection: `template:${id} | Registry check.`, index: 0, totalSections: 1 },
+      0, 1, "Registry check.",
+      { brand: "RIT COURSE DRAFT", palette: ["#F76902", "#D0D3D4"] },
+    );
+    // The generic fallback is exactly these three boxes; a real family is not.
+    const isFallback = /CONCEPT[\s\S]*EVIDENCE[\s\S]*APPLICATION/.test(svg) && !/data-visual-template="showcase-lca"/.test(svg);
+    assert.equal(isFallback, false, `${id} is registered but renders the fallback`);
+  }
+});
+
+test("storyboard audio-description cues reach the episode without being spoken", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "rit-describe-"));
+  try {
+    const sourcePath = join(directory, "source.txt");
+    const storyboardPath = join(directory, "storyboard.md");
+    await writeFile(sourcePath, "The treaty rests on a three-part bargain.");
+    await writeFile(
+      storyboardPath,
+      [
+        "# Bargain",
+        "",
+        "## 0:00 - 0:20 — The bargain",
+        "",
+        "**[VISUAL]** Show the three-part bargain and mark Article VI as unmet.",
+        "**[DESCRIBE]** Three boxes joined by arrows; the third, labelled disarmament, has a dashed outline marked unmet.",
+        "**[CLAIM source]** The treaty rests on a three-part bargain.",
+        "",
+        "**[VOICEOVER]**",
+        "",
+        "The treaty rests on a three-part bargain.",
+        "",
+        "**Delivery:** Even.",
+      ].join("\n"),
+    );
+    const entries = await ingestSourcePack([sourcePath]);
+    const episode = await episodeFromStoryboard(storyboardPath, entries);
+    const [beat] = episode.beats;
+    assert.match(beat.accessibility.audioDescriptionCue, /dashed outline marked unmet/);
+    // The cue is for the description track only; it must not be narrated.
+    assert.doesNotMatch(beat.narration, /dashed|DESCRIBE/);
+    // Beats without the directive keep the old default.
+    assert.equal(
+      (await readStoryboard(storyboardPath))[0].audioDescriptionCue.startsWith("Three boxes"),
+      true,
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("retiming rewrites only beat timecodes from measured durations", async () => {
+  const { retimeStoryboard } = await import("../src/storyboard.mjs");
+  const before = [
+    "# Lesson",
+    "",
+    "## 0:00 - 0:30 — First",
+    "Body mentions 0:00 - 0:30 in prose and must not change.",
+    "",
+    "## 0:30 - 1:00 — Second",
+    "",
+    "## 1:00 - 1:30 — Third, with — an em-dash",
+  ].join("\n");
+  const after = retimeStoryboard(before, [42.3, 59.0001, 3605]);
+  assert.match(after, /^## 0:00 - 0:43 — First$/m);
+  // Rounded up so a window never undershoots its audio.
+  assert.match(after, /^## 0:43 - 1:43 — Second$/m);
+  // Hours roll over, and a title containing an em-dash survives intact.
+  assert.match(after, /^## 1:43 - 1:01:48 — Third, with — an em-dash$/m);
+  assert.match(after, /Body mentions 0:00 - 0:30 in prose/);
+  assert.throws(() => retimeStoryboard(before, [10, 20]), /3 beats but 2/);
 });

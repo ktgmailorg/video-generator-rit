@@ -229,6 +229,68 @@ export function courseShotSvg(
   </svg>`;
 }
 
+// Every showcase id that has a real body in showcaseVisualBody. A declared
+// template outside this set must not be honoured: it would render the generic
+// CONCEPT/EVIDENCE/APPLICATION fallback while reporting a specific family, and
+// so slip past the subject-matched-visuals release gate.
+export const RENDERABLE_SHOWCASE_TEMPLATES = new Set([
+  "showcase-algorithms",
+  "showcase-analysis-framework",
+  "showcase-argument-chain",
+  "showcase-captions",
+  "showcase-case-contrast",
+  "showcase-checklist",
+  "showcase-circuits",
+  "showcase-comparison",
+  "showcase-compilers",
+  "showcase-confusion-matrix",
+  "showcase-contribution-margin",
+  "showcase-correlation",
+  "showcase-cryptography",
+  "showcase-data-split",
+  "showcase-data-structures",
+  "showcase-database",
+  "showcase-derivative",
+  "showcase-distributed",
+  "showcase-dynamic-programming",
+  "showcase-error-analysis",
+  "showcase-exposure",
+  "showcase-fluids",
+  "showcase-hash-table",
+  "showcase-hierarchy",
+  "showcase-institutional-network",
+  "showcase-interdisciplinary",
+  "showcase-lca",
+  "showcase-malware-pipeline",
+  "showcase-mechanics",
+  "showcase-memory-hierarchy",
+  "showcase-mis",
+  "showcase-model-ladder",
+  "showcase-networks",
+  "showcase-observability",
+  "showcase-operating-systems",
+  "showcase-oxygen",
+  "showcase-phishing",
+  "showcase-pid",
+  "showcase-policy-fork",
+  "showcase-primary-source",
+  "showcase-process",
+  "showcase-programming",
+  "showcase-recurrence",
+  "showcase-regime-tiers",
+  "showcase-resonance",
+  "showcase-search",
+  "showcase-signals",
+  "showcase-spectroscopy",
+  "showcase-stakeholders",
+  "showcase-state-machine",
+  "showcase-table",
+  "showcase-threat-model",
+  "showcase-time-horizon",
+  "showcase-timeline",
+  "showcase-treaty-bargain",
+]);
+
 const broadShowcaseTemplates = new Set([
   "showcase-algorithms",
   "showcase-interdisciplinary",
@@ -246,6 +308,7 @@ export function resolveCourseVisualTemplate(section) {
     : section;
   const inferred = inferAcademicTemplate(semanticSection);
   if (declared?.[1]?.startsWith("showcase-")) {
+    if (!RENDERABLE_SHOWCASE_TEMPLATES.has(declared[1])) return inferred;
     return broadShowcaseTemplates.has(declared[1])
       ? inferred || declared[1]
       : declared[1];

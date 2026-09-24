@@ -21,7 +21,8 @@ import {
 } from "./pipeline/planning.mjs";
 import { produceEpisode } from "./pipeline/produce.mjs";
 import { collectToolchain } from "./pipeline/run-lock.mjs";
-import { toolVersion } from "./pipeline/tools.mjs";
+import { probeDuration, toolVersion } from "./pipeline/tools.mjs";
+import { retimeStoryboard } from "./storyboard.mjs";
 import { loadBrandPack } from "./course/brand-pack.mjs";
 
 const commonOptions = {
@@ -55,6 +56,8 @@ export async function runCli(argv = process.argv.slice(2), io = console) {
       return packageCommand(rest, io);
     case "inspect":
       return inspectCommand(rest, io);
+    case "retime":
+      return retimeCommand(rest, io);
     default:
       throw new TypeError(`Unknown command: ${command}\n\n${helpText}`);
   }
@@ -885,8 +888,56 @@ Usage:
   rit-video replay RUN_LOCK [--frozen]
   rit-video package --target panopto
   rit-video inspect RUN_LOCK
+  rit-video retime --storyboard FILE [--dry-run]
 
 Common:
   --config, -c FILE     Configuration file (default video.config.json)
   --json                Machine-readable output
 `;
+
+// Rewrite a storyboard's beat timecodes to match the narration that was
+// actually synthesized. Run after produce; then plan again, because approvals
+// are bound to the storyboard and the edit invalidates them.
+async function retimeCommand(args, io) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      ...commonOptions,
+      storyboard: { type: "string" },
+      "dry-run": { type: "boolean", default: false },
+    },
+  });
+  if (!values.storyboard) throw new TypeError("retime requires --storyboard FILE");
+  const { config } = await loadConfig(values.config);
+  const storyboardPath = resolve(values.storyboard);
+  const text = await readFile(storyboardPath, "utf8");
+  const narrationDir = join(resolve(config.workflow.outputRoot), "work", "narration");
+  const beatCount = (text.match(/^##\s+\d+:\d+/gm) || []).length;
+  const ffprobe = process.env.VIDEO_FFPROBE || "ffprobe";
+  const durations = [];
+  for (let index = 1; index <= beatCount; index += 1) {
+    const audio = join(narrationDir, `beat-${String(index).padStart(2, "0")}.mp3`);
+    try {
+      await access(audio);
+    } catch {
+      throw new Error(`No narration for beat ${index} at ${audio}; run produce first`);
+    }
+    durations.push(await probeDuration(audio, ffprobe));
+  }
+  const retimed = retimeStoryboard(text, durations);
+  const total = Math.round(durations.reduce((sum, value) => sum + Math.ceil(value), 0));
+  const changed = retimed !== text;
+  if (!values["dry-run"] && changed) {
+    const { writeFile } = await import("node:fs/promises");
+    await writeFile(storyboardPath, retimed);
+  }
+  print(
+    io,
+    values.json,
+    { storyboard: storyboardPath, beats: beatCount, totalSeconds: total, changed, dryRun: values["dry-run"] },
+    changed
+      ? `${values["dry-run"] ? "Would retime" : "Retimed"} ${beatCount} beats to ${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}${values["dry-run"] ? "" : "; run plan again before approving"}`
+      : "Storyboard timings already match the narration",
+  );
+  return { status: changed ? "retimed" : "unchanged", totalSeconds: total };
+}
