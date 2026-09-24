@@ -365,6 +365,17 @@ the assignment record.
 Each beat uses a timed level-two heading. Planned time is editorial guidance;
 generated narration duration is the rendering authority.
 
+Once narration exists, `rit-video retime --storyboard FILE` rewrites the beat
+timecodes to the measured audio (rounding up), leaving everything else
+untouched. Plan again afterwards: approvals are bound to the storyboard.
+
+For visual content the narration does not already verbalize, add a
+`**[DESCRIBE]**` line to the beat. It goes into the packaged audio-description
+script and is never spoken. Visual templates are selected with
+`**[VISUAL]** template:showcase-<family> | ...`; an id with no real diagram is
+ignored in favour of inference, so a typo cannot pass the subject-matched
+visuals check with a generic card.
+
 ```markdown
 ## 0:00 - 0:30 — Stable inputs
 
