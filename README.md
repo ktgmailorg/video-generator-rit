@@ -87,7 +87,8 @@ every OpenAI endpoint.
 - Node.js 22 or newer
 - FFmpeg and FFprobe
 - `pdftotext` for PDF source packs
-- `uvx` only when using the zero-configuration Edge TTS adapter
+- Nothing extra for Edge TTS narration: it uses a bundled Node client (`uvx`
+  is only a fallback)
 - Provider-specific servers, binaries, workflows, and model weights installed
   separately
 
