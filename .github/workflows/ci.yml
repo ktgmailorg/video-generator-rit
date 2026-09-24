@@ -42,3 +42,11 @@ jobs:
       - name: Audit
         if: runner.os == 'Linux'
         run: npm audit --audit-level=high
+      # The desktop app ships Electron and Chromium inside every installer, so
+      # its dependency tree reaches users and is audited just as strictly.
+      - name: Audit desktop
+        if: runner.os == 'Linux'
+        working-directory: desktop
+        run: |
+          npm ci --ignore-scripts
+          npm audit --audit-level=high

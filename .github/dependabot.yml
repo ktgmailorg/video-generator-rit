@@ -1,0 +1,21 @@
+# Security advisories should arrive as reviewable pull requests, not as a CI
+# audit failure discovered days later.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: /desktop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      electron:
+        patterns: ["electron", "electron-builder"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
