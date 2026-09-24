@@ -107,6 +107,22 @@ async function doctorCommand(args, io) {
   ]);
   checks.push({ name: "ffmpeg", ...ffmpeg });
   checks.push({ name: "ffprobe", ...ffprobe });
+  // Only PDF source packs need pdftotext, so its absence is reported without
+  // failing doctor for the many projects that never use one.
+  const probe = await toolVersion("pdftotext", ["-v"]);
+  // Some poppler/xpdf builds exit non-zero from -v even when installed, so only
+  // a missing executable counts as unavailable.
+  const pdftotext = {
+    available: probe.available || !/ENOENT|not found/i.test(probe.error || ""),
+  };
+  checks.push({
+    name: "pdftotext",
+    optional: true,
+    available: pdftotext.available,
+    ...(pdftotext.available
+      ? {}
+      : { warning: "not installed; needed only for PDF source packs (brew install poppler / apt-get install poppler-utils)" }),
+  });
   for (const roleName of requiredRoles(config)) {
     if (!config.roles[roleName]) {
       checks.push({
@@ -210,7 +226,7 @@ async function doctorCommand(args, io) {
       });
     }
   }
-  const ok = checks.every((check) => check.available);
+  const ok = checks.every((check) => check.available || check.optional);
   const report = { ok, configPath: path, preset: config.preset, checks };
   print(
     io,
@@ -219,7 +235,7 @@ async function doctorCommand(args, io) {
     checks
       .map(
         (check) =>
-          `${check.available ? "PASS" : "FAIL"} ${check.name}${check.error ? ` — ${check.error}` : check.warning ? ` — WARNING: ${check.warning}` : ""}`,
+          `${check.available ? "PASS" : check.optional ? "SKIP" : "FAIL"} ${check.name}${check.error ? ` — ${check.error}` : check.warning ? ` — WARNING: ${check.warning}` : ""}`,
       )
       .join("\n"),
   );

@@ -142,7 +142,10 @@ function extractPdfText(bytes, command) {
     });
     child.on("error", (error) => {
       const wrapped = new Error(
-        `PDF extraction requires ${command}: ${error.message}`,
+        `PDF extraction requires ${command} (${error.message}). ` +
+          "Install poppler — macOS: brew install poppler; Debian/Ubuntu: " +
+          "apt-get install poppler-utils; Windows: choco install poppler — or " +
+          "give the source inline \"content\" in sources.json instead of a PDF path.",
       );
       wrapped.code = "PDF_EXTRACTOR_UNAVAILABLE";
       reject(wrapped);

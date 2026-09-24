@@ -1510,3 +1510,23 @@ test("release approval binds the audio-description script when one exists", asyn
   // Callers that pass no script keep the previous subject shape.
   assert.equal("audioDescriptionSha256" in releaseApprovalSubject(base), false);
 });
+
+test("a missing PDF extractor says how to fix it", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "rit-pdf-"));
+  try {
+    const pdf = join(directory, "reading.pdf");
+    await writeFile(pdf, "%PDF-1.4\n");
+    await assert.rejects(
+      ingestSourcePack([pdf], { pdfToText: "rit-video-no-such-extractor" }),
+      (error) => {
+        assert.equal(error.code, "PDF_EXTRACTOR_UNAVAILABLE");
+        // Name the fix, and the no-install alternative.
+        assert.match(error.message, /brew install poppler/);
+        assert.match(error.message, /inline "content"/);
+        return true;
+      },
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
