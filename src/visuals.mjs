@@ -186,25 +186,36 @@ export function courseShotSvg(
     );
   }
   const titleLines = wrap(section.title, 58, 2);
-  const directionLines = wrap(
-    section.visualDirection || "Instructor-authored visual direction",
-    30,
-    5,
-  );
-  const phraseLines = wrap(phrase || section.title, 30, 5);
+  // No family matched, so show the narration itself as a reading aid: the
+  // sentence before, the one being spoken, and the one coming next. The visual
+  // direction is a production instruction and must never be shown to learners
+  // — for pasted scripts it is the studio's own boilerplate.
+  const sentences = String(section.narration || "")
+    .replace(/\s+/g, " ")
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+  const spoken = String(phrase || "").trim();
+  let at = sentences.findIndex((sentence) => sentence === spoken);
+  if (at < 0) at = sentences.findIndex((sentence) => spoken && sentence.startsWith(spoken.slice(0, 24)));
+  if (at < 0 && sentences.length) {
+    at = Math.min(sentences.length - 1, Math.floor((shotIndex / Math.max(1, shotCount)) * sentences.length));
+  }
+  const before = at > 0 ? sentences[at - 1] : section.title;
+  const after = at >= 0 ? sentences[at + 1] : undefined;
+  const phraseLines = wrap(spoken || sentences[at] || section.title, 30, 5);
   const equationLines = wrap(section.equations?.join(" · ") || "", 34, 3);
   const progress = ((shotIndex + 1) / shotCount) * 1640;
-  const active = shotIndex % 3;
+  // The spoken sentence stays highlighted; neighbours are context, not steps.
+  const active = 1;
   const cards = [
-    { label: "Visual focus", lines: directionLines, x: 96 },
+    { label: at > 0 ? "Just said" : "This section", lines: wrap(before || "", 30, 5), x: 96 },
     { label: "Key idea", lines: phraseLines, x: 656 },
-    {
-      label: equationLines.length ? "Equation" : "Learning connection",
-      lines: equationLines.length
-        ? equationLines
-        : ["Connect this idea to", "the narrated explanation."],
-      x: 1216,
-    },
+    equationLines.length
+      ? { label: "Equation", lines: equationLines, x: 1216 }
+      : after
+        ? { label: "Coming next", lines: wrap(after, 30, 5), x: 1216 }
+        : { label: "This section", lines: wrap(section.title, 30, 5), x: 1216 },
   ];
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
     <defs>

@@ -1576,3 +1576,21 @@ test("policy families print only what the author supplied", () => {
   );
   assert.match(bargain, /UNMET/);
 });
+
+test("generic course cards show narration, never the production direction", () => {
+  const section = {
+    title: "Structure, not intent",
+    visualDirection: "Build an academic concept diagram for section 5 of 31. Use the narration to choose labels, relationships, and emphasis; do not add unsupported facts.",
+    narration: "People can believe every word they say. The claim is structural, not personal. Incentives select for safe positions.",
+    index: 4,
+    totalSections: 31,
+  };
+  // This direction matches no family, so it takes the card path.
+  assert.equal(resolveCourseVisualTemplate(section), null);
+  const svg = courseShotSvg(section, 1, 3, "The claim is structural, not personal.", {});
+  assert.doesNotMatch(svg, /academic concept diagram|unsupported facts|section 5 of 31/);
+  assert.doesNotMatch(svg, /Connect this idea to/);
+  // The neighbouring sentences give context around the one being spoken.
+  assert.match(svg, /People can believe every word/);
+  assert.match(svg, /Incentives select for safe/);
+});
