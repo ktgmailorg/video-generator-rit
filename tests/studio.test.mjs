@@ -278,3 +278,27 @@ test("a config that omits its classification is treated as sensitive", () => {
   assert.equal(inspection.ok, false);
   assert.equal(inspection.mode, "local-only");
 });
+
+test("pasted scripts get diagram families from their own narration", async () => {
+  const { inferTemplateFromNarration, resolveCourseVisualTemplate } = await import("../src/visuals.mjs");
+  // Scored per beat of narration: a distinctive phrase is enough on its own.
+  assert.equal(
+    inferTemplateFromNarration("Trade agreements rest on a grand bargain, and the bargain holds only while both keep their promises."),
+    "showcase-treaty-bargain",
+  );
+  assert.equal(
+    inferTemplateFromNarration("Lobbyists and think tanks shape the rules, and policy relevance decides which ideas survive."),
+    "showcase-institutional-network",
+  );
+  // A lone incidental word is not evidence, and mid-word substrings never are.
+  assert.equal(inferTemplateFromNarration("Growth can be bought cheaply for a while."), null);
+  assert.equal(inferTemplateFromNarration("The report mentions a signal once."), null);
+
+  // And the studio carries the choice into the storyboard it generates.
+  const storyboard = scriptToStoryboard({
+    title: "Trade policy",
+    script: "Trade agreements rest on a grand bargain. Each side lowers tariffs in exchange for access, and the bargain holds only while both keep their promises.",
+  });
+  const [, title, visualDirection] = storyboard.match(/^## .+? — (.+)$\n\n\*\*\[VISUAL\]\*\* (.+)$/m);
+  assert.equal(resolveCourseVisualTemplate({ title, visualDirection }), "showcase-treaty-bargain");
+});

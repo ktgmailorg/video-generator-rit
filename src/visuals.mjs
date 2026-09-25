@@ -320,60 +320,79 @@ export function resolveCourseVisualTemplate(section) {
   return inferred;
 }
 
+const ACADEMIC_TEMPLATE_RULES = [
+  // Policy, treaty, and international-relations families run first on
+  // purpose: political-science prose reuses words the technical rules below
+  // claim ("consensus", "quorum", "adversary", "hierarchy", "contrast"), and
+  // a beat that matches nothing renders a generic course card, which is a
+  // release blocker.
+  [/(?:treaty bargain|grand bargain|three.part bargain|npt bargain|article vi|reciprocal (?:promise|obligation)|bargain (?:holds|struck))/, "showcase-treaty-bargain"],
+  [/(?:haves and have.nots|nuclear haves|two classes of state|tiered membership|recognized holders|sorted by a date|frozen by a (?:test )?date)/, "showcase-regime-tiers"],
+  [/(?:numbered premise|premises? lead|syllogism|chain of reasoning|argument chain|reasoning chain|assumption (?:leads|licenses))/, "showcase-argument-chain"],
+  [/(?:think tanks?|policy community|epistemic community|philanthropic funding|foundation funding|funding and relevance|policy relevance|institutional ecosystem)/, "showcase-institutional-network"],
+  [/(?:contrasting cases|divergent outcomes|opposite lessons|watching state|one state (?:gave up|renounced))/, "showcase-case-contrast"],
+  [/(?:unipolar|time horizon|geopolitical equilibrium|equilibrium (?:holds|breaks|will not)|erodes over time|holds for now)/, "showcase-time-horizon"],
+  [/(?:two roads|fork in the|mutually exclusive|laissez.faire|world (?:state|government)|only two (?:options|paths))/, "showcase-policy-fork"],
+  [/(?:loop invariant|prove correctness|correctness argument|analysis checklist|define i\/o|precondition|postcondition)/, "showcase-analysis-framework"],
+  [/(?:recurrence|recursive|recursion tree|divide.and.conquer|master theorem)/, "showcase-recurrence"],
+  [/(?:dynamic programming|table filling|memoization|tabulation|cell depends)/, "showcase-dynamic-programming"],
+  [/(?:hash table|hashing|bucket|collision|chaining)/, "showcase-hash-table"],
+  [/(?:breadth.first|depth.first|bfs|dfs|shortest path|graph (?:traversal|representation)|directed graph|adjacency (?:list|matrix)|search tree|frontier)/, "showcase-search"],
+  [/(?:array|linked list|binary tree|heap|stack|queue|data structure|sparse list)/, "showcase-data-structures"],
+  [/(?:asymptotic|big.o|complexity|growth rate|sorting algorithm|algorithm analysis)/, "showcase-algorithms"],
+  [/(?:sql|database|relational|schema|entity.relationship|er diagram|primary key|foreign key|transaction|b.tree|query|normalization)/, "showcase-database"],
+  [/(?:compiler|lexer|lexical|parser|grammar|syntax tree|semantic analysis|intermediate representation|llvm|bytecode)/, "showcase-compilers"],
+  [/(?:cryptograph|cipher|encrypt|decrypt|aes|rsa|public.key|private.key|symmetric key|asymmetric key|quantum.resistant)/, "showcase-cryptography"],
+  [/(?:object identity|object.oriented|namespace|scope|encapsulation|class hierarchy)/, "showcase-programming"],
+  [/(?:packet|router|routing|tcp|udp|network layer|network protocol|packet encapsulat|network encapsulat)/, "showcase-networks"],
+  [/(?:operating system|kernel|scheduler|process (?:state|scheduling|control block)|threads?|system call|virtual memory|page replacement)/, "showcase-operating-systems"],
+  [/(?:distributed|consensus|replication|leader|follower|quorum|cloud computing)/, "showcase-distributed"],
+  [/\b(?:cache|memory hierarchy|register file|ram|storage hierarchy|locality)\b/, "showcase-memory-hierarchy"],
+  [/(?:raster|vertex shader|fragment shader|framebuffer|graphics pipeline|rendering pipeline)/, "showcase-process"],
+  [/(?:instruction set|processor pipeline|cpu pipeline|processor|cpu|assembly language|microarchitecture)/, "showcase-circuits"],
+  [/(?:finite state|state machine|automata|transition system)/, "showcase-state-machine"],
+  [/(?:confusion matrix|precision|recall|true positive|false positive)/, "showcase-confusion-matrix"],
+  [/(?:\b(?:test split|leakage|cross.validation|k.fold)\b|\btrain(?:ing)?\b.{0,90}\b(?:validation|test|split|fold)\b|\bvalidation\b.{0,90}\b(?:training|test|split|fold)\b)/, "showcase-data-split"],
+  [/(?:machine learning|neural network|classification|regression|model selection)/, "showcase-model-ladder"],
+  [/(?:threat model|attack surface|security boundary|adversary)/, "showcase-threat-model"],
+  [/(?:phishing|credential theft|suspicious email)/, "showcase-phishing"],
+  [/(?:malware|payload|sandbox|detection pipeline)/, "showcase-malware-pipeline"],
+  [/(?:stakeholder|residents|community organizations|shared authority|decision makers)/, "showcase-stakeholders"],
+  [/(?:fourier|frequency|signal|sampling|waveform|spectrum)/, "showcase-signals"],
+  [/(?:derivative|slope|calculus|rate of change|gradient)/, "showcase-derivative"],
+  [/(?:circuit|logic gate|voltage|current|resistor|capacitor)/, "showcase-circuits"],
+  [/(?:function|variable|control flow|programming|debugging|object.oriented)/, "showcase-programming"],
+  [/(?:hierarchy|taxonomy|tree diagram|levels)/, "showcase-hierarchy"],
+  [/(?:flowchart|process diagram|sequence of steps|workflow|from .+? to .+? to|pipeline of steps)/, "showcase-process"],
+  [/(?:table with columns|columns (?:for|labeled)|expected output|actual output|row and column|tabular)/, "showcase-table"],
+  [/(?:checklist|requirements? list|verify each|eligibility|acceptance criteria)/, "showcase-checklist"],
+  [/(?:timeline|chronolog|over time|life cycle|lifecycle|milestones?)/, "showcase-timeline"],
+  [/(?:compare|comparison|contrast|versus|side.by.side|trade.?off)/, "showcase-comparison"],
+];
+
+// Rule tokens must begin at a word boundary. Without it, ordinary words
+// matched mid-word — "cheaply" contains "heap", "disarray" contains "array",
+// "telescope" contains "scope" — and pulled a data-structures or programming
+// diagram into a political-science lesson. Only the start is anchored, so a
+// stem such as "cryptograph" still matches "cryptography".
+const wordStartCache = new WeakMap();
+function atWordStart(pattern) {
+  let anchored = wordStartCache.get(pattern);
+  if (!anchored) {
+    anchored = new RegExp(`\\b(?:${pattern.source})`, pattern.flags);
+    wordStartCache.set(pattern, anchored);
+  }
+  return anchored;
+}
+
 function inferAcademicTemplate(section) {
   const text = `${section.title || ""} ${section.visualDirection || ""}`
     .toLowerCase()
     .replace(/^template:academic-process\s*\|\s*/i, "");
-  const rules = [
-    // Policy, treaty, and international-relations families run first on
-    // purpose: political-science prose reuses words the technical rules below
-    // claim ("consensus", "quorum", "adversary", "hierarchy", "contrast"), and
-    // a beat that matches nothing renders a generic course card, which is a
-    // release blocker.
-    [/(?:treaty bargain|grand bargain|three.part bargain|npt bargain|article vi|reciprocal (?:promise|obligation)|bargain (?:holds|struck))/, "showcase-treaty-bargain"],
-    [/(?:haves and have.nots|nuclear haves|two classes of state|tiered membership|recognized holders|sorted by a date|frozen by a (?:test )?date)/, "showcase-regime-tiers"],
-    [/(?:numbered premise|premises? lead|syllogism|chain of reasoning|argument chain|reasoning chain|assumption (?:leads|licenses))/, "showcase-argument-chain"],
-    [/(?:think tanks?|policy community|epistemic community|philanthropic funding|foundation funding|funding and relevance|policy relevance|institutional ecosystem)/, "showcase-institutional-network"],
-    [/(?:contrasting cases|divergent outcomes|opposite lessons|watching state|one state (?:gave up|renounced))/, "showcase-case-contrast"],
-    [/(?:unipolar|time horizon|geopolitical equilibrium|equilibrium (?:holds|breaks|will not)|erodes over time|holds for now)/, "showcase-time-horizon"],
-    [/(?:two roads|fork in the|mutually exclusive|laissez.faire|world (?:state|government)|only two (?:options|paths))/, "showcase-policy-fork"],
-    [/(?:loop invariant|prove correctness|correctness argument|analysis checklist|define i\/o|precondition|postcondition)/, "showcase-analysis-framework"],
-    [/(?:recurrence|recursive|recursion tree|divide.and.conquer|master theorem)/, "showcase-recurrence"],
-    [/(?:dynamic programming|table filling|memoization|tabulation|cell depends)/, "showcase-dynamic-programming"],
-    [/(?:hash table|hashing|bucket|collision|chaining)/, "showcase-hash-table"],
-    [/(?:breadth.first|depth.first|bfs|dfs|shortest path|graph (?:traversal|representation)|directed graph|adjacency (?:list|matrix)|search tree|frontier)/, "showcase-search"],
-    [/(?:array|linked list|binary tree|heap|stack|queue|data structure|sparse list)/, "showcase-data-structures"],
-    [/(?:asymptotic|big.o|complexity|growth rate|sorting algorithm|algorithm analysis)/, "showcase-algorithms"],
-    [/(?:sql|database|relational|schema|entity.relationship|er diagram|primary key|foreign key|transaction|b.tree|query|normalization)/, "showcase-database"],
-    [/(?:compiler|lexer|lexical|parser|grammar|syntax tree|semantic analysis|intermediate representation|llvm|bytecode)/, "showcase-compilers"],
-    [/(?:cryptograph|cipher|encrypt|decrypt|aes|rsa|public.key|private.key|symmetric key|asymmetric key|quantum.resistant)/, "showcase-cryptography"],
-    [/(?:object identity|object.oriented|namespace|scope|encapsulation|class hierarchy)/, "showcase-programming"],
-    [/(?:packet|router|routing|tcp|udp|network layer|network protocol|packet encapsulat|network encapsulat)/, "showcase-networks"],
-    [/(?:operating system|kernel|scheduler|process (?:state|scheduling|control block)|threads?|system call|virtual memory|page replacement)/, "showcase-operating-systems"],
-    [/(?:distributed|consensus|replication|leader|follower|quorum|cloud computing)/, "showcase-distributed"],
-    [/\b(?:cache|memory hierarchy|register file|ram|storage hierarchy|locality)\b/, "showcase-memory-hierarchy"],
-    [/(?:raster|vertex shader|fragment shader|framebuffer|graphics pipeline|rendering pipeline)/, "showcase-process"],
-    [/(?:instruction set|processor pipeline|cpu pipeline|processor|cpu|assembly language|microarchitecture)/, "showcase-circuits"],
-    [/(?:finite state|state machine|automata|transition system)/, "showcase-state-machine"],
-    [/(?:confusion matrix|precision|recall|true positive|false positive)/, "showcase-confusion-matrix"],
-    [/(?:\b(?:test split|leakage|cross.validation|k.fold)\b|\btrain(?:ing)?\b.{0,90}\b(?:validation|test|split|fold)\b|\bvalidation\b.{0,90}\b(?:training|test|split|fold)\b)/, "showcase-data-split"],
-    [/(?:machine learning|neural network|classification|regression|model selection)/, "showcase-model-ladder"],
-    [/(?:threat model|attack surface|security boundary|adversary)/, "showcase-threat-model"],
-    [/(?:phishing|credential theft|suspicious email)/, "showcase-phishing"],
-    [/(?:malware|payload|sandbox|detection pipeline)/, "showcase-malware-pipeline"],
-    [/(?:stakeholder|residents|community organizations|shared authority|decision makers)/, "showcase-stakeholders"],
-    [/(?:fourier|frequency|signal|sampling|waveform|spectrum)/, "showcase-signals"],
-    [/(?:derivative|slope|calculus|rate of change|gradient)/, "showcase-derivative"],
-    [/(?:circuit|logic gate|voltage|current|resistor|capacitor)/, "showcase-circuits"],
-    [/(?:function|variable|control flow|programming|debugging|object.oriented)/, "showcase-programming"],
-    [/(?:hierarchy|taxonomy|tree diagram|levels)/, "showcase-hierarchy"],
-    [/(?:flowchart|process diagram|sequence of steps|workflow|from .+? to .+? to|pipeline of steps)/, "showcase-process"],
-    [/(?:table with columns|columns (?:for|labeled)|expected output|actual output|row and column|tabular)/, "showcase-table"],
-    [/(?:checklist|requirements? list|verify each|eligibility|acceptance criteria)/, "showcase-checklist"],
-    [/(?:timeline|chronolog|over time|life cycle|lifecycle|milestones?)/, "showcase-timeline"],
-    [/(?:compare|comparison|contrast|versus|side.by.side|trade.?off)/, "showcase-comparison"],
-  ];
-  return rules.find(([pattern]) => pattern.test(text))?.[1] || null;
+  return (
+    ACADEMIC_TEMPLATE_RULES.find(([pattern]) => atWordStart(pattern).test(text))?.[1] ||
+    null
+  );
 }
 
 function academicSceneLabel(template) {
@@ -1329,11 +1348,16 @@ function showcaseVisualBody(
   // which mixes authored and default text and reads incoherently.
   if (template === "showcase-treaty-bargain") {
     const strands = academicDiagramLabels(section, 3, [
-      "PEACEFUL USE",
-      "NO NEW WEAPONS",
-      "DISARMAMENT",
+      "FIRST OBLIGATION",
+      "SECOND OBLIGATION",
+      "THIRD OBLIGATION",
     ]);
-    const unmet = strands.length - 1;
+    // Only claim a strand is unmet when the author's direction says so.
+    const unmet = /\b(?:unmet|broken|severed|unkept|not kept)\b/i.test(
+      section.visualDirection || "",
+    )
+      ? strands.length - 1
+      : -1;
     return `<g>
       ${label(960, 330, "A BARGAIN HOLDS ONLY WHILE EVERY SIDE KEEPS ITS PROMISE", 24, accent)}
       ${strands
@@ -1345,7 +1369,7 @@ function showcaseVisualBody(
           return `<g>
             <rect x="${x}" y="410" width="${width}" height="180" rx="20" fill="${selected ? accent : "#202020"}" fill-opacity="${selected ? ".18" : "1"}" stroke="${selected ? accent : secondary}" stroke-width="${selected ? 6 : 2}" stroke-dasharray="${broken ? "14 10" : "0"}"/>
             ${label(x + width / 2, 500, strand, 24, selected ? accent : "#ffffff")}
-            ${label(x + width / 2, 550, broken ? "UNMET" : "OBSERVED", 19, broken ? accent : "#cfd2d3")}
+            ${unmet < 0 ? "" : label(x + width / 2, 550, broken ? "UNMET" : "OBSERVED", 19, broken ? accent : "#cfd2d3")}
           </g>${index < strands.length - 1 ? `<path d="M${x + width} 500h60" stroke="${accent}" stroke-width="6" marker-end="url(#showcase-arrow)"/>` : ""}`;
         })
         .join("")}
@@ -1353,9 +1377,10 @@ function showcaseVisualBody(
     </g>`;
   }
   if (template === "showcase-regime-tiers") {
-    const tiers = academicDiagramLabels(section, 2, [
-      "RECOGNIZED HOLDERS",
-      "EVERYONE ELSE",
+    const tiers = academicDiagramLabels(section, 3, [
+      "UPPER TIER",
+      "LOWER TIER",
+      "SORTED BY ONE RULE",
     ]);
     const holders = 5;
     return `<g>
@@ -1366,17 +1391,17 @@ function showcaseVisualBody(
         return `<circle cx="${x}" cy="410" r="${selected ? 48 : 36}" fill="${selected ? accent : "#202020"}" fill-opacity="${selected ? .25 : 1}" stroke="${selected ? accent : secondary}" stroke-width="${selected ? 6 : 3}"/>`;
       }).join("")}
       <line x1="160" y1="520" x2="1760" y2="520" stroke="${accent}" stroke-width="5" stroke-dasharray="18 12"/>
-      ${label(960, 556, "SORTED BY A DATE, NOT BY CONDUCT", 21, accent)}
+      ${label(960, 556, tiers[2], 21, accent)}
       <rect x="160" y="610" width="1600" height="170" rx="22" fill="#202020" stroke="${secondary}" stroke-width="2" stroke-opacity=".6"/>
       ${label(960, 705, tiers[1], 26, active % 2 === 1 ? accent : "#ffffff")}
     </g>`;
   }
   if (template === "showcase-argument-chain") {
     const steps = academicDiagramLabels(section, 4, [
-      "IDEAL CALLED UNREACHABLE",
-      "ALTERNATIVE CALLED WORSE",
-      "STATUS QUO CALLED MORAL",
-      "INEQUALITY JUSTIFIED",
+      "FIRST PREMISE",
+      "SECOND PREMISE",
+      "THIRD PREMISE",
+      "CONCLUSION",
     ]);
     return `<g>
       ${steps
@@ -1403,7 +1428,7 @@ function showcaseVisualBody(
     ]);
     const columns = [300, 760, 1220, 1660];
     return `<g>
-      ${label(960, 330, "MONEY BUYS ATTENTION, AND ATTENTION SHAPES ADVICE", 24, accent)}
+      ${label(960, 330, "FOLLOW THE RESOURCES FROM SOURCE TO DECISION", 24, accent)}
       ${nodes
         .map((node, index) => {
           const x = columns[Math.min(index, columns.length - 1)];
@@ -1415,15 +1440,18 @@ function showcaseVisualBody(
           </g>${index < nodes.length - 1 ? `<path d="M${x + 150} 525h${Math.max(20, next - x - 300)}" stroke="${accent}" stroke-width="5" marker-end="url(#showcase-arrow)"/>` : ""}`;
         })
         .join("")}
-      ${label(960, 700, "CONFORM AND THE FUNDING CONTINUES; DEVIATE AND IT DOES NOT", 22, secondary)}
+      ${label(960, 700, "ASK WHICH POSITIONS EACH LINK REWARDS", 22, secondary)}
     </g>`;
   }
   if (template === "showcase-case-contrast") {
-    const cases = academicDiagramLabels(section, 2, [
-      "KEPT THE PROGRAM",
-      "GAVE IT UP",
+    const labels = academicDiagramLabels(section, 4, [
+      "FIRST CASE",
+      "SECOND CASE",
+      "FIRST OUTCOME",
+      "SECOND OUTCOME",
     ]);
-    const outcomes = ["LEFT ALONE", "REGIME REMOVED"];
+    const cases = labels.slice(0, 2);
+    const outcomes = labels.slice(2, 4);
     return `<g>
       ${cases
         .map((entry, index) => {
@@ -1438,13 +1466,15 @@ function showcaseVisualBody(
           </g>`;
         })
         .join("")}
-      ${label(960, 762, "A WATCHING STATE DRAWS ITS OWN LESSON", 23, accent)}
+      ${label(960, 762, "SAME QUESTION, DIFFERENT OUTCOMES — ASK WHY", 23, accent)}
     </g>`;
   }
   if (template === "showcase-time-horizon") {
-    const phases = academicDiagramLabels(section, 2, [
+    const phases = academicDiagramLabels(section, 4, [
       "HOLDS FOR NOW",
       "THEN IT DOES NOT",
+      "ONE OUTCOME",
+      "ANOTHER OUTCOME",
     ]);
     const early = active % 2 === 0;
     return `<g>
@@ -1455,19 +1485,21 @@ function showcaseVisualBody(
       <circle cx="960" cy="560" r="21" fill="${accent}"/>
       ${label(570, 522, phases[0], 24, early ? accent : "#ffffff")}
       ${label(960, 330, phases[1], 24, early ? "#ffffff" : accent)}
-      ${label(1560, 372, "CASCADE", 22, secondary)}
-      ${label(1560, 782, "COERCION", 22, secondary)}
+      ${label(1560, 372, phases[2], 22, secondary)}
+      ${label(1560, 782, phases[3], 22, secondary)}
       ${label(560, 700, "THE BREAK POINT IS NOT SCHEDULED", 21, secondary)}
     </g>`;
   }
   if (template === "showcase-policy-fork") {
-    const roads = academicDiagramLabels(section, 2, [
-      "ACCEPT THE SPREAD",
-      "AUTHORITY ABOVE STATES",
+    const labels = academicDiagramLabels(section, 3, [
+      "FIRST PATH",
+      "SECOND PATH",
+      "ONE SHARED PREMISE",
     ]);
+    const roads = labels.slice(0, 2);
     return `<g>
       <rect x="610" y="300" width="700" height="130" rx="18" fill="#202020" stroke="${accent}" stroke-width="4"/>
-      ${label(960, 374, "IF IT CANNOT BE UNINVENTED", 23, accent)}
+      ${label(960, 374, labels[2], 23, accent)}
       <path d="M810 430L500 596" stroke="${accent}" stroke-width="6" marker-end="url(#showcase-arrow)"/>
       <path d="M1110 430L1420 596" stroke="${accent}" stroke-width="6" marker-end="url(#showcase-arrow)"/>
       ${label(960, 540, "PICK ONE — THEY EXCLUDE EACH OTHER", 21, secondary)}
@@ -1706,4 +1738,27 @@ export function courseThumbnailSvg(options = {}) {
     ${titleLines.map((line, index) => `<text x="78" y="${titleStart + index * titleStep}" fill="#ffffff" font-size="${titleSize}" font-family="Arial, Liberation Sans, sans-serif" font-weight="700">${xml(line)}</text>`).join("")}
     <text x="78" y="646" fill="#d0d3d4" font-size="26" font-family="Arial, Liberation Sans, sans-serif">Source-grounded • Captioned • Reviewable</text>
   </svg>`;
+}
+
+/**
+ * Choose a family from a whole passage of narration rather than a short
+ * direction. A paragraph mentions many incidental words, so a single hit is
+ * not evidence; a family is chosen only when its vocabulary recurs, and the
+ * most-supported family wins (earlier rules break ties, as in inference).
+ * Returns null when nothing recurs, leaving the caller's default in place.
+ */
+export function inferTemplateFromNarration(text, { minimumHits = 2 } = {}) {
+  const lowered = String(text || "").toLowerCase();
+  let best = null;
+  for (const [pattern, template] of ACADEMIC_TEMPLATE_RULES) {
+    const counter = new RegExp(atWordStart(pattern).source, "g");
+    // A multi-word phrase ("think tanks", "state machine") is specific enough
+    // to count as full evidence on its own; a single word needs to recur.
+    const hits = (lowered.match(counter) || []).reduce(
+      (sum, match) => sum + (/\s/.test(match.trim()) ? minimumHits : 1),
+      0,
+    );
+    if (hits >= minimumHits && (!best || hits > best.hits)) best = { template, hits };
+  }
+  return best?.template || null;
 }

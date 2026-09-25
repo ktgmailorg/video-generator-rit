@@ -1,3 +1,5 @@
+import { inferTemplateFromNarration } from "../src/visuals.mjs";
+
 const MAX_SCRIPT_CHARACTERS = 120_000;
 const TARGET_WORDS_PER_BEAT = 85;
 
@@ -73,13 +75,18 @@ export function scriptToStoryboard({
     const duration = Math.max(12, (words(narration).length / 145) * 60);
     const start = cursor;
     cursor += duration;
+    // A pasted script has no authored visual direction, so choose the diagram
+    // family from the beat's own narration, and only on recurring evidence.
+    const template = inferTemplateFromNarration(
+      `${beatTitle(group, index)} ${narration}`,
+    );
     const claim = sourceId
       ? `\n**[CLAIM ${sourceId}]** ${group[0]}\n`
       : "";
     return [
       `## ${clock(start)} - ${clock(cursor)} — ${beatTitle(group, index)}`,
       "",
-      `**[VISUAL]** Build an academic concept diagram for section ${index + 1} of ${groups.length}. Use the narration to choose labels, relationships, and emphasis; do not add unsupported facts.`,
+      `**[VISUAL]** ${template ? `template:${template} | ` : ""}Build an academic concept diagram for section ${index + 1} of ${groups.length}. Use the narration to choose labels, relationships, and emphasis; do not add unsupported facts.`,
       claim,
       "**[VOICEOVER]**",
       "",

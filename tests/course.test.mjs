@@ -834,10 +834,10 @@ test("course renderer provides deterministic RISC-V teaching diagrams", () => {
 test("course renderer provides deterministic academic showcase diagrams", () => {
   const templates = [
     ["showcase-treaty-bargain", "KEEPS ITS PROMISE"],
-    ["showcase-regime-tiers", "SORTED BY A DATE"],
-    ["showcase-argument-chain", "INEQUALITY JUSTIFIED"],
-    ["showcase-institutional-network", "ATTENTION SHAPES ADVICE"],
-    ["showcase-case-contrast", "WATCHING STATE"],
+    ["showcase-regime-tiers", "SORTED BY ONE RULE"],
+    ["showcase-argument-chain", "CONCLUSION"],
+    ["showcase-institutional-network", "SOURCE TO DECISION"],
+    ["showcase-case-contrast", "DIFFERENT OUTCOMES"],
     ["showcase-time-horizon", "NOT SCHEDULED"],
     ["showcase-policy-fork", "EXCLUDE EACH OTHER"],
     ["showcase-resonance", "RESONANT REGION"],
@@ -1529,4 +1529,50 @@ test("a missing PDF extractor says how to fix it", async () => {
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test("visual rules never fire from inside an ordinary word", () => {
+  // Each of these used to select a diagram through a mid-word substring:
+  // "cheaply"/"heap", "disarray"/"array", "haystack"/"stack", "telescope"/"scope".
+  for (const title of [
+    "Security can be bought cheaply",
+    "The disarray of the alliance",
+    "A needle in a haystack",
+    "Viewed through a telescope",
+  ]) {
+    assert.equal(resolveCourseVisualTemplate({ title, visualDirection: "" }), null, title);
+  }
+  // Whole words and stems still match.
+  assert.equal(resolveCourseVisualTemplate({ title: "Push onto the stack", visualDirection: "" }), "showcase-data-structures");
+  assert.equal(resolveCourseVisualTemplate({ title: "Cryptography basics", visualDirection: "" }), "showcase-cryptography");
+});
+
+test("policy families print only what the author supplied", () => {
+  // These families are reused across courses, so none may carry text from the
+  // lesson they were first built for. With no authored labels they must render
+  // neutral structure, never another lesson's claims.
+  const leaked = /REGIME REMOVED|LEFT ALONE|UNINVENTED|CASCADE|COERCION|SORTED BY A DATE|MONEY BUYS|DISARMAMENT|UNMET/;
+  for (const id of [
+    "showcase-treaty-bargain", "showcase-regime-tiers", "showcase-argument-chain",
+    "showcase-institutional-network", "showcase-case-contrast", "showcase-time-horizon",
+    "showcase-policy-fork",
+  ]) {
+    const svg = courseShotSvg(
+      { title: "A trade agreement", visualDirection: `template:${id} | Explain the agreement.`, index: 0, totalSections: 1 },
+      0, 1, "Narration.", { brand: "RIT COURSE DRAFT", palette: ["#F76902", "#D0D3D4"] },
+    );
+    assert.doesNotMatch(svg, leaked, id);
+  }
+  // Authored labels still flow through, including the unmet marker on request.
+  const fork = courseShotSvg(
+    { title: "Fork", visualDirection: "template:showcase-policy-fork | Two roads (TARIFFS, FREE TRADE, IF DEMAND FALLS).", index: 0, totalSections: 1 },
+    0, 1, "Narration.", { brand: "RIT COURSE DRAFT", palette: ["#F76902", "#D0D3D4"] },
+  );
+  assert.match(fork, /TARIFFS/);
+  assert.match(fork, /IF DEMAND FALLS/);
+  const bargain = courseShotSvg(
+    { title: "Bargain", visualDirection: "template:showcase-treaty-bargain | The bargain (A, B, C) with the last strand unmet.", index: 0, totalSections: 1 },
+    0, 1, "Narration.", { brand: "RIT COURSE DRAFT", palette: ["#F76902", "#D0D3D4"] },
+  );
+  assert.match(bargain, /UNMET/);
 });
