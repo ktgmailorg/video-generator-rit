@@ -39,7 +39,9 @@ zero terminal use and zero API keys.
 - [x] Installers: macOS dmg, Windows NSIS, Linux AppImage/deb via
       electron-builder + GitHub Actions release workflow
 - [ ] Auto-update via electron-updater
-- [ ] Packaged-app smoke test (launch → frozen-mode render → assert output)
+- [x] Studio render test: the real server renders a complete video from a
+      desktop-style config, offline (guards the boot-but-never-renders bug)
+- [ ] Same render against the packaged app, not the source tree
 
 ## Next
 
