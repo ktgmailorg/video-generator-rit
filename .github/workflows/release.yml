@@ -48,7 +48,7 @@ jobs:
                -o -name '*.blockmap' -o -name 'latest*.yml' \) \
             -exec cp {} upload/ \;
           ls -la upload
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: installers-${{ matrix.os }}
           path: upload/*
