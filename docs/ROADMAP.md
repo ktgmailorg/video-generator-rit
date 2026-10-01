@@ -45,7 +45,6 @@ zero terminal use and zero API keys.
 
 - [ ] Diagrams generated from a pasted script's own structure; today most
       beats without an authored direction render a narration-only card
-- [ ] Packaged-app render test in CI (boot is covered; a full render is not)
 
 ## Later
 
