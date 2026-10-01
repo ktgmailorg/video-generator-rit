@@ -17,7 +17,8 @@ RIT AI Club — contributions are welcome from anyone, anywhere.
 
 - Bug reports and reproduction cases (issues welcome)
 - Provider adapters and CLI/HTTP bridges
-- Visual templates and accessibility improvements
+- Visual templates and accessibility improvements — start with
+  [docs/ADDING_VISUALS.md](docs/ADDING_VISUALS.md)
 - Studio UI/UX improvements for non-technical users
 - Documentation and example course packs
 - Desktop packaging (see the roadmap)

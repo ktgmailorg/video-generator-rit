@@ -8,6 +8,17 @@
 - [ ] Demo video on the README, made with the tool itself
 - [ ] Good-first-issue backlog
 
+## Shipped since v0.3
+
+- [x] Local models (Ollama / LM Studio / llama.cpp, auto-detected), eight cloud
+      providers, and custom OpenAI-compatible endpoints in the desktop app
+- [x] Policy / international-relations diagram families, so non-STEM courses
+      pass the subject-matched-visuals gate — see
+      [ADDING_VISUALS.md](ADDING_VISUALS.md)
+- [x] Audio-description script in the draft review, bound to release approval
+- [x] `rit-video retime`, `**[DESCRIBE]**`, readable caption cues
+- [x] Electron 44; desktop dependency tree audited in CI; Dependabot
+
 ## v0.4.0 — Desktop app
 
 Goal: a non-technical user downloads one installer and makes a video with
@@ -29,6 +40,12 @@ zero terminal use and zero API keys.
       electron-builder + GitHub Actions release workflow
 - [ ] Auto-update via electron-updater
 - [ ] Packaged-app smoke test (launch → frozen-mode render → assert output)
+
+## Next
+
+- [ ] Diagrams generated from a pasted script's own structure; today most
+      beats without an authored direction render a narration-only card
+- [ ] Packaged-app render test in CI (boot is covered; a full render is not)
 
 ## Later
 
